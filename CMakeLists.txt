@@ -1,0 +1,176 @@
+cmake_minimum_required(VERSION 3.8)
+project("rtmpServer" VERSION 1.0.0)
+
+set(CMAKE_CXX_STANDARD 14)
+
+
+if(MSVC)
+    SET(CMAKE_CXX_FLAGS "/EHsc")  # deal with MSVC Warning C4530, mac
+else()
+    SET(CMAKE_CXX_FLAGS "/utf-8" "${CMAKE_CXX_FLAGS}")    # for CPP
+    SET(CMAKE_C_FLAGS "/utf-8" "${CMAKE_C_FLAGS}")        # for C
+endif()
+set(CMAKE_CXX_FLAGS "-D__STDC_CONSTANT_MACROS")
+# ----------------------------------------
+# SET_LOCAL_PATH
+# ----------------------------------------
+include(./.SET_LOCAL_PATH.cmake)
+
+#ADD_DEFINITIONS(-D__STDC_LIMIT_MACROS -D_WEBSOCKETPP_CPP11_STL_ -DASIO_STANDALONE)
+if (UNIX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -lpthread -std=c++11 -Wl,--no-as-needed")
+endif()
+
+#-------------------------------------
+#  compile settings
+#-------------------------------------
+If (UNIX)
+    add_compile_options(-x objective-c++)
+    add_compile_options(-g)
+    #    add_compile_options(-target arm64-apple-macos11)
+    #add_compile_options(-std=c++11)
+    #set(CMAKE_EXE_LINKER_FLAGS
+    #       "-framework Cocoa -framework AppKit -framework CoreData -framework Foundation -framework CoreVideo -framework VideoToolbox -framework CoreMedia -framework AVFoundation  -framework CoreAudio -framework AudioToolbox")
+    #add_definitions(-Wall)
+elseif(WIN32)
+    add_compile_options(-bigobj)
+endif ()
+
+
+#-------------------------------------
+#  src files
+#-------------------------------------
+list(APPEND RESOURCE_FILES resources/application.ini)
+
+if(WIN32)
+    add_executable (${PROJECT_NAME}
+            ${RESOURCE_FILES}
+            ${CPPLIST}
+            tests/mp42rtmp.cpp
+            #tests/h264aac2rtmp.cpp
+            #tests/test.cpp
+            )
+elseif(UNIX)
+    add_executable (${PROJECT_NAME}
+            ${RESOURCE_FILES}
+            ${CPPLIST}
+            )
+endif()
+
+
+#-------------------------------------
+#  ffmpeg lib and include
+#-------------------------------------
+find_path(AVCODEC_INCLUDE_DIR libavcodec/avcodec.h)
+find_library(AVCODEC_LIBRARY avcodec)
+
+message(STATUS AVCODEC_LIBRARY ${AVCODEC_LIBRARY})
+message(STATUS AVCODEC_INCLUDE_DIR ${AVCODEC_INCLUDE_DIR})
+
+find_path(AVFORMAT_INCLUDE_DIR libavformat/avformat.h)
+find_library(AVFORMAT_LIBRARY avformat)
+
+message(STATUS AVFORMAT_LIBRARY ${AVFORMAT_LIBRARY})
+message(STATUS AVFORMAT_INCLUDE_DIR ${AVFORMAT_INCLUDE_DIR})
+
+find_path(AVUTIL_INCLUDE_DIR libavutil/avutil.h)
+find_library(AVUTIL_LIBRARY avutil)
+
+message(STATUS AVUTIL_INCLUDE_DIR ${AVUTIL_INCLUDE_DIR})
+message(STATUS AVUTIL_LIBRARY ${AVUTIL_LIBRARY})
+
+find_path(AVDEVICE_INCLUDE_DIR libavdevice/avdevice.h)
+find_library(AVDEVICE_LIBRARY avdevice)
+
+message(STATUS AVDEVICE_INCLUDE_DIR ${AVDEVICE_INCLUDE_DIR})
+message(STATUS AVDEVICE_LIBRARY ${AVDEVICE_LIBRARY})
+
+find_path(AVFILTER_INCLUDE_DIR libavfilter/avfilter.h)
+find_library(AVFILTER_LIBRARY avfilter)
+
+message(STATUS AVFILTER_INCLUDE_DIR ${AVFILTER_INCLUDE_DIR})
+message(STATUS AVFILTER_LIBRARY ${AVFILTER_LIBRARY})
+
+#find_path(POSTPROC_INCLUDE_DIR libpostproc/postprocess.h)
+#find_library(POSTPROC_LIBRARY postproc)
+
+find_path(SWRESAMPLE_INCLUDE_DIR libswresample/swresample.h)
+find_library(SWRESAMPLE_LIBRARY swresample)
+
+message(STATUS SWRESAMPLE_INCLUDE_DIR ${SWRESAMPLE_INCLUDE_DIR})
+message(STATUS SWRESAMPLE_LIBRARY ${SWRESAMPLE_LIBRARY})
+
+find_path(SWSCALE_INCLUDE_DIR libswscale/swscale.h)
+find_library(SWSCALE_LIBRARY swscale)
+
+message(STATUS SWSCALE_INCLUDE_DIR ${SWSCALE_INCLUDE_DIR})
+message(STATUS SWSCALE_LIBRARY ${SWSCALE_LIBRARY})
+
+find_path(RTMP_INCLUDE_DIR librtmp/rtmp.h)
+find_library(RTMP_LIBRARY rtmp)
+
+message(STATUS RTMP_LIBRARY ${RTMP_LIBRARY})
+message(STATUS RTMP_INCLUDE_DIR ${RTMP_INCLUDE_DIR})
+
+#--------------------------------------
+# asio lib and include
+#--------------------------------------
+find_path(ASIO_INCLUDE_DIR asio)
+
+message(STATUS ASIO_INCLUDE_DIR = ${ASIO_INCLUDE_DIR})
+
+# ≈‰÷√¡¥Ω”ø‚
+if(WIN32)
+    target_include_directories( ${PROJECT_NAME}
+            PRIVATE
+            ${PROJECT_SOURCE_DIR}/include
+            ${ASIO_INCLUDE_DIR}
+            ${AVCODEC_INCLUDE_DIR}
+            ${AVFORMAT_INCLUDE_DIR}
+            ${AVUTIL_INCLUDE_DIR}
+            ${AVDEVICE_INCLUDE_DIR}
+            ${AVFILTER_INCLUDE_DIR}
+            ${SWRESAMPLE_INCLUDE_DIR}
+            ${SWSCALE_INCLUDE_DIR}
+            )
+    target_link_libraries( ${PROJECT_NAME}
+            PRIVATE
+            ${AVCODEC_LIBRARY}
+            ${AVFORMAT_LIBRARY}
+            ${AVUTIL_LIBRARY}
+            ${AVDEVICE_LIBRARY}
+            ${AVFILTER_LIBRARY}
+            ${SWRESAMPLE_LIBRARY}
+            ${SWSCALE_LIBRARY}
+        )
+
+elseif(UNIX)
+    target_include_directories( ${PROJECT_NAME}
+        PRIVATE
+            ${PROJECT_SOURCE_DIR}/include
+            ${ASIO_INCLUDE_DIR}
+        ${AVCODEC_INCLUDE_DIR}
+        ${AVFORMAT_INCLUDE_DIR}
+        ${AVUTIL_INCLUDE_DIR}
+        ${AVDEVICE_INCLUDE_DIR}
+        ${AVFILTER_INCLUDE_DIR}
+        ${SWRESAMPLE_INCLUDE_DIR}
+        ${SWSCALE_INCLUDE_DIR}
+            )
+    target_link_libraries( ${PROJECT_NAME}
+        PRIVATE
+        ${AVCODEC_LIBRARY}
+        ${AVFORMAT_LIBRARY}
+        ${AVUTIL_LIBRARY}
+        ${AVDEVICE_LIBRARY}
+        ${AVFILTER_LIBRARY}
+        ${SWRESAMPLE_LIBRARY}
+        ${SWSCALE_LIBRARY}
+            )
+endif()
+
+add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+        "${PROJECT_SOURCE_DIR}/resources/application.ini"
+        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/"
+        )
