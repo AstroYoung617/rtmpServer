@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project("rtmpServer" VERSION 1.0.0)
+project("rtmpServer" VERSION 0.0.1)
 
 set(CMAKE_CXX_STANDARD 14)
 
@@ -46,9 +46,10 @@ if(WIN32)
     add_executable (${PROJECT_NAME}
             ${RESOURCE_FILES}
             ${CPPLIST}
-            tests/mp42rtmp.cpp
+            #tests/mp42rtmp.cpp
             #tests/h264aac2rtmp.cpp
-            #tests/test.cpp
+            tests/test.cpp
+            #tests/rtpSystem.cpp
             )
 elseif(UNIX)
     add_executable (${PROJECT_NAME}
@@ -119,6 +120,34 @@ find_path(ASIO_INCLUDE_DIR asio)
 
 message(STATUS ASIO_INCLUDE_DIR = ${ASIO_INCLUDE_DIR})
 
+#--------------------------------------
+# live555 lib and include
+#--------------------------------------
+find_path(BASICUSAGEENVIRONMENT_INCLUDE_DIR BasicUsageEnvironment.hh)
+find_library(BASICUSAGEENVIRONMENT_LIBRARY BasicUsageEnvironment)
+
+message(STATUS BASICUSAGEENVIRONMENT_INCLUDE_DIR = ${BASICUSAGEENVIRONMENT_INCLUDE_DIR})
+message(STATUS BASICUSAGEENVIRONMENT_LIBRARY ${BASICUSAGEENVIRONMENT_LIBRARY})
+
+find_path(USAGEENVIRONMENT_INCLUDE_DIR UsageEnvironment.hh)
+find_library(USAGEENVIRONMENT_LIBRARY UsageEnvironment)
+
+message(STATUS USAGEENVIRONMENT_INCLUDE_DIR = ${USAGEENVIRONMENT_INCLUDE_DIR})
+message(STATUS USAGEENVIRONMENT_LIBRARY ${USAGEENVIRONMENT_LIBRARY})
+
+find_path(LIVEMEDIA_INCLUDE_DIR liveMedia.hh)
+find_library(LIVEMEDIA_LIBRARY liveMedia)
+
+message(STATUS LIVEMEDIA_INCLUDE_DIR = ${LIVEMEDIA_INCLUDE_DIR})
+message(STATUS LIVEMEDIA_LIBRARY ${LIVEMEDIA_LIBRARY})
+
+
+find_path(GROUPSOCK_INCLUDE_DIR groupsock.hh)
+find_library(GROUPSOCK_LIBRARY groupsock)
+
+message(STATUS GROUPSOCK_INCLUDE_DIR = ${GROUPSOCK_INCLUDE_DIR})
+message(STATUS GROUPSOCK_LIBRARY ${GROUPSOCK_LIBRARY})
+
 # ≈‰÷√¡¥Ω”ø‚
 if(WIN32)
     target_include_directories( ${PROJECT_NAME}
@@ -132,6 +161,10 @@ if(WIN32)
             ${AVFILTER_INCLUDE_DIR}
             ${SWRESAMPLE_INCLUDE_DIR}
             ${SWSCALE_INCLUDE_DIR}
+            ${BASICUSAGEENVIRONMENT_INCLUDE_DIR}
+            ${LIVEMEDIA_INCLUDE_DIR}
+            ${USAGEENVIRONMENT_INCLUDE_DIR}
+            ${GROUPSOCK_INCLUDE_DIR}
             )
     target_link_libraries( ${PROJECT_NAME}
             PRIVATE
@@ -142,6 +175,10 @@ if(WIN32)
             ${AVFILTER_LIBRARY}
             ${SWRESAMPLE_LIBRARY}
             ${SWSCALE_LIBRARY}
+            ${BASICUSAGEENVIRONMENT_LIBRARY}
+            ${LIVEMEDIA_LIBRARY}
+            ${USAGEENVIRONMENT_LIBRARY}
+            ${GROUPSOCK_LIBRARY}
         )
 
 elseif(UNIX)
