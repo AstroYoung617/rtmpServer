@@ -48,8 +48,8 @@ if(WIN32)
             ${CPPLIST}
             #tests/mp42rtmp.cpp
             #tests/h264aac2rtmp.cpp
-            tests/test.cpp
-            #tests/rtpSystem.cpp
+            #tests/test.cpp
+            tests/rtpSystem.cpp
             )
 elseif(UNIX)
     add_executable (${PROJECT_NAME}
