@@ -8,6 +8,7 @@
 ## 发展
 
 - 2022.1.12 完成项目搭建，进行了MP4、h264、aac的rtmp发送测试，使用ffmpeg尝试了rtp发送测试，因为jrtplib被ban了，采用了live555这个开源的rtp库，完成了编译以及发送测试，待进行接收测试。
+- 2022.1.13 完成live555库的CMake链接，测试发送rtp遇到问题，使用官网中的测试程序发送ts文件过后，用vlc播放网络串流失败。
 
 ## LICENCE
 [MIT](https://github.com/AstroYoung617/rtmpServer/blob/main/LICENSE)
