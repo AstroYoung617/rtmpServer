@@ -23,10 +23,12 @@ Boolean const isSSM = False;
 
 
 UsageEnvironment* env;
-char const* inputFileName = "E:/common/test.264";
+char const* inputFileName = "E:/common/output.aac";
+MPEG1or2Demux* mpegDemux;
 //FramedSource* videoSource;
-H264VideoStreamFramer* videoSource;
-RTPSink* videoSink;
+FramedSource* audioSource;
+
+RTPSink* audioSink;
 
 void play(); // forward
 
@@ -67,9 +69,11 @@ int main(int argc, char** argv) {
   //  SimpleRTPSink::createNew(*env, &rtpGroupsock, 33, 90000, "video", "mp2t",
   //    1, True, False /*no 'M' bit*/);
   //create h264 video rtp sink from groupsock
-  videoSink = H264VideoRTPSink::createNew(*env, &rtpGroupsock, 96);
+  audioSink = MPEG4GenericRTPSink::createNew(*env, &rtpGroupsock, 97, 90000, "audio", "aac", "1", 1);
+  //audioSink = SimpleRTPSink::createNew(*env, &rtpGroupsock, 97, 90000, "audio", "aac", 1,
+    //True, False);
 
-  const unsigned estimatedSessionBandwidth = 500; // in kbps; for RTCP b/w share
+  const unsigned estimatedSessionBandwidth = 5000; // in kbps; for RTCP b/w share
   const unsigned maxCNAMElen = 100;
   unsigned char CNAME[maxCNAMElen + 1];
   gethostname((char*)CNAME, maxCNAMElen);
@@ -79,7 +83,7 @@ int main(int argc, char** argv) {
 #endif
     RTCPInstance::createNew(*env, &rtcpGroupsock,
       estimatedSessionBandwidth, CNAME,
-      videoSink, NULL /* we're a server */, isSSM);
+      audioSink, NULL /* we're a server */, isSSM);
   // 开始自动运行的媒体
 
 #ifdef IMPLEMENT_RTSP_SERVER
@@ -114,7 +118,7 @@ int main(int argc, char** argv) {
 void afterPlaying(void* /*clientData*/) {
   *env << "...从文件中读取完毕\n";
 
-  Medium::close(videoSource);
+  Medium::close(audioSource);
   // 将关闭从源读取的输入文件
 
   play();
@@ -133,12 +137,13 @@ void play() {
       << "\" 作为 file source\n";
     exit(1);
   }
-  FramedSource* videoEs = fileSource;
+  FramedSource* audioES = fileSource;
 
   //videoSource = MPEG2TransportStreamFramer::createNew(*env, fileSource);
-  videoSource = H264VideoStreamFramer::createNew(*env, videoEs);
+  audioSource
+    = MPEG4Fram::createNew(*env, audioES);
 
 
   *env << "Beginning to read from file...\n";
-  videoSink->startPlaying(*videoSource, afterPlaying, videoSink);
+  audioSink->startPlaying(*audioSource, afterPlaying, audioSink);
 }
