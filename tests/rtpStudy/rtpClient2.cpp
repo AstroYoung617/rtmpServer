@@ -54,7 +54,7 @@ int main()
 
   struct sockaddr_in cliaddr;
   cliaddr.sin_family = AF_INET;
-  cliaddr.sin_port = htons(8888); // 客户端也需要绑定这端口
+  cliaddr.sin_port = htons(1234); // 客户端也需要绑定这端口
   inet_pton(AF_INET, "239.255.42.42", &cliaddr.sin_addr.s_addr);
   int len = sizeof(cliaddr);
   //inet_pton(AF_INET, "0.0.0.0", &addr.sin_addr.s_addr);

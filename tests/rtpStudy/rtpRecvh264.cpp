@@ -52,27 +52,20 @@ int main()
     exit(0);
   }
   //inet_pton(AF_INET, "0.0.0.0", &addr.sin_addr.s_addr);
-  // 加入到组播
-  struct ip_mreq op;  //ip_mreq和ip_mreqn都有相同的效果， 后者是更新的版本多了一个设置级别ifindex，
-  //但是前者依然可以使用
-  op.imr_interface.s_addr = INADDR_ANY; // 本地地址
-  inet_pton(AF_INET, "239.255.42.42", &op.imr_multiaddr.s_addr);
-  //加入组播
-  setsockopt(fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, (const char*)&op, sizeof(op));
   std::cout << "this is server" << std::endl;
   // 3. 通信
   sockaddr_in sin;
   sin.sin_family = AF_INET;
   sin.sin_port = htons(1234);
-  sin.sin_addr.s_addr = inet_addr("239.255.42.42");
+  sin.sin_addr.s_addr = inet_addr("127.0.0.1");
   int len = sizeof(sin);
 
-  RtpPacket* rtpPacket = (RtpPacket*)malloc(5000);
+  RtpPacket* rtpPacket = (RtpPacket*)malloc(50000);
   while (1)
   {
 
     // 接收数据
-    char buf[2000];
+    char buf[50000];
     //阻塞，当组播收到数据时被组播程序唤醒，从组播中获取数据。
     recvfrom(fd, buf, strlen(buf) + 1, 0, (sockaddr*)&sin, &len);
     rtpPacket = (RtpPacket*)buf;
@@ -80,8 +73,8 @@ int main()
     std::cout << "client say: ";
     for (int i = 0; i < 4; i++) {
       std::cout << rtpPacket->payload[i] << " ";
-    } 
-      //对文本进行逆序
+    }
+    //对文本进行逆序
     for (int i = 0; i < 2; i++) {
       temp = rtpPacket->payload[i];
       rtpPacket->payload[i] = rtpPacket->payload[4 - i - 1];
@@ -89,24 +82,6 @@ int main()
     }
     std::cout << std::endl;
 
-    // 发送数据
-    const char* sendData = "一个来自服务端的UDP数据包\n";
-    
-    rtpPacket->rtpHeader.seq = htons(rtpPacket->rtpHeader.seq);
-    rtpPacket->rtpHeader.timestamp = htonl(rtpPacket->rtpHeader.timestamp);
-    rtpPacket->rtpHeader.ssrc = htonl(rtpPacket->rtpHeader.ssrc);
-    //udp使用sendto
-    sendto(fd, (const char*)rtpPacket, 10 + RTP_HEADER_SIZE, 0, (sockaddr*)&sin, len);
-
-    //在组播的情况下recvFrom和sendto使用同一个地址进行传输
-    //sendto(fd, buf, strlen(buf) + 1, 0, (sockaddr*)&sin, len);
-    rtpPacket->rtpHeader.seq = ntohs(rtpPacket->rtpHeader.seq);
-    rtpPacket->rtpHeader.timestamp = ntohl(rtpPacket->rtpHeader.timestamp);
-    rtpPacket->rtpHeader.ssrc = ntohl(rtpPacket->rtpHeader.ssrc);
-
-    rtpPacket->rtpHeader.seq++;
-    rtpPacket->rtpHeader.timestamp += 500;
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
   }
   closesocket(fd);
   return 0;
