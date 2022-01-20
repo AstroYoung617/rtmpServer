@@ -5,7 +5,11 @@
 //对于C++而言的网络库，需要引入下面的头文件和lib库
 #ifdef _WIN32
 #include <winsock2.h>
+#include <windows.h>
+//引入ws2tcpip来使用inet_pton
+#include <ws2tcpip.h> 
 #pragma comment(lib, "WS2_32.lib")
+#pragma comment(lib, "wsock32.lib")
 //对于C而言需要引入下面的头文件
 #else
 #include <netinet/in.h>
@@ -26,7 +30,7 @@ typedef int SOCKET;
 #endif
 
 #include "test/rtp.h"
-
+#include <ws2ipdef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -35,8 +39,8 @@ typedef int SOCKET;
 #include <string.h>
 #include <thread>
 
-#define AAC_FILE    "E:/common/32000.aac"
-#define CLIENT_PORT 9832
+#define AAC_FILE    "./test.aac"
+#define CLIENT_PORT 1234
 
 struct AdtsHeader
 {
@@ -184,6 +188,14 @@ int main(int argc, char* argv[])
   struct AdtsHeader adtsHeader;
   struct RtpPacket* rtpPacket;
 
+  int16_t port;
+  std::cout << "please input this audio's port" << std::endl;
+  while (std::cin >> port) {
+    if (getchar() == '\n')
+      break;
+  }
+  std::cout << "port is : " << port << std::endl;
+
   fd = fopen(AAC_FILE, "rb");
   if (fd == nullptr)
   {
@@ -197,6 +209,13 @@ int main(int argc, char* argv[])
     printf("failed to create udp socket\n");
     return -1;
   }
+  // 加入到组播
+  //struct ip_mreq op;  //ip_mreq和ip_mreqn都有相同的效果， 后者是更新的版本多了一个设置级别ifindex，
+  ////但是前者依然可以使用
+  //op.imr_interface.s_addr = INADDR_ANY; // 本地地址
+  //inet_pton(AF_INET, "239.255.42.42", &op.imr_multiaddr.s_addr);
+  ////加入组播
+  //setsockopt(socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, (const char*)&op, sizeof(op));
 
   frame = (uint8_t*)malloc(5000);
   rtpPacket = (RtpPacket*)malloc(5000);
@@ -205,7 +224,7 @@ int main(int argc, char* argv[])
 
   while (1)
   {
-
+    //读adts header
     ret = fread(frame, 1, 7, fd);
     if (ret <= 0)
     {
@@ -218,7 +237,7 @@ int main(int argc, char* argv[])
       printf("parse err\n");
       break;
     }
-
+    //读aac data
     ret = fread(frame, 1, adtsHeader.aacFrameLength - 7, fd);
     if (ret < 0)
     {
@@ -226,7 +245,7 @@ int main(int argc, char* argv[])
       break;
     }
 
-    rtpSendAACFrame(socket, "233.255.42.42", CLIENT_PORT,
+    rtpSendAACFrame(socket, "127.0.0.1", port,
       rtpPacket, frame, adtsHeader.aacFrameLength - 7);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(25));
