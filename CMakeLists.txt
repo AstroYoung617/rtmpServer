@@ -49,7 +49,17 @@ if(WIN32)
             #tests/mp42rtmp.cpp
             #tests/h264aac2rtmp.cpp
             #tests/test.cpp
-            tests/rtpSystem.cpp
+            #tests/rtpSystem.cpp
+            tests/rtpStudy/rtp.cpp
+            #tests/rtpStudy/rtpSendaac.cpp
+            #tests/rtpStudy/rtpServer2.cpp
+            #tests/rtpStudy/rtpClient2.cpp
+            #tests/rtpStudy/rtpSendaac.cpp
+            #tests/rtpStudy/serverUDP.cpp
+            #tests/rtpStudy/rtpSendh264.cpp
+            #tests/rtpStudy/rtpRecvh264.cpp
+            #tests/rtpStudy/unPackrtph264.cpp
+            tests/rtpStudy/unPackrtpaac.cpp
             )
 elseif(UNIX)
     add_executable (${PROJECT_NAME}
