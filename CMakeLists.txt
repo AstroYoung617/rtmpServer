@@ -42,6 +42,10 @@ endif ()
 #-------------------------------------
 list(APPEND RESOURCE_FILES resources/application.ini)
 
+#添加cpp文件，相当于引入include
+aux_source_directory(src/media CPPLIST)
+aux_source_directory(src/business CPPLIST)
+
 if(WIN32)
     add_executable (${PROJECT_NAME}
             ${RESOURCE_FILES}
@@ -59,7 +63,8 @@ if(WIN32)
             #tests/rtpStudy/rtpSendh264.cpp
             #tests/rtpStudy/rtpRecvh264.cpp
             #tests/rtpStudy/unPackrtph264.cpp
-            tests/rtpStudy/unPackrtpaac.cpp
+            #tests/rtpStudy/unPackrtpaac.cpp
+            tests/test.cpp
             )
 elseif(UNIX)
     add_executable (${PROJECT_NAME}
