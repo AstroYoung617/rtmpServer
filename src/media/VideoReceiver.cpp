@@ -2,7 +2,7 @@
 #include <media/VideoReceiver.h>
 
 FILE* poutfile = NULL;
-
+FILE* fileHandle = fopen("./test.yuv", "wb+");
 char* outputfilename = "./receive.264";
 
 VideoReceiver::VideoReceiver(int _port, std::mutex* _mutex, std::condition_variable* _vdcv) {
@@ -11,7 +11,10 @@ VideoReceiver::VideoReceiver(int _port, std::mutex* _mutex, std::condition_varia
 	mutex = move(_mutex);
 	vdcv = _vdcv;
 	//initSocket(_port);
+	//initDecoder();
+	//初始化解码器
 }
+
 
 void VideoReceiver::setPort(int _port) {
 	port = _port;
@@ -22,11 +25,11 @@ int VideoReceiver::getPort() {
 }
 
 uint8_t* VideoReceiver::getData() {
-	return data;
+	return outDcData;
 }
 
 void VideoReceiver::setData(uint8_t* _data) {
-	data = _data;
+	outDcData = _data;
 }
 
 void VideoReceiver::initSocket() {
@@ -81,7 +84,6 @@ void VideoReceiver::initSocket() {
 	//接收从客户端发来的数据
 	while ((receive_bytes = recvfrom(sockfd, recvbuf, MAXDATASIZE, 0, (struct sockaddr*)&client_sockaddr, &sin_size)) > 0)
 	{
-		std::unique_lock<std::mutex> lck(*mutex);
 		if (strncmp(recvbuf, "over", 4) == 0)
 
 		{
@@ -90,10 +92,9 @@ void VideoReceiver::initSocket() {
 
 		}
 		poutfile = fopen(outputfilename, "ab+");
-		rtp_unpackage_vd(recvbuf, receive_bytes);
+		rtp_unpackage_vd(recvbuf, receive_bytes, outDcData, outDcLen, ts);
 		fclose(poutfile);
-		lck.unlock();
-		vdcv->notify_one();
+		//todo 解码操作
 	}
 	strcpy(sendbuf, "success");
 	sendto(sockfd, sendbuf, BUFFER_SIZE, 0, (struct sockaddr*)&client_sockaddr, sin_size);
@@ -102,7 +103,44 @@ void VideoReceiver::initSocket() {
 	return;
 }
 
-void VideoReceiver::rtp_unpackage_vd(char* bufIn, int len) {
+AVFrame* VideoReceiver::decode(uint8_t* data, size_t len, int64_t ts) {
+	if (!decoder) {
+		D_LOG("new a video decoder...");
+		decoder = new Decoder();
+		decoder->setPixFmt(AV_PIX_FMT_YUV420P);
+		decoder->init();
+	}
+	decoder->push(data, len, ts);
+	std::unique_lock<std::mutex> lk(*mutex);
+	auto tempFrame = av_frame_alloc();
+	if (decoder) {
+		auto decodeRtn = decoder->poll(tempFrame);
+		if (decodeRtn < 0) {
+			lk.unlock();
+			av_frame_free(&tempFrame);
+			return nullptr;
+		}
+	}
+	else {
+		lk.unlock();
+		av_frame_free(&tempFrame);
+		return nullptr;
+	}
+	if (recvFrameCache) {
+		av_frame_unref(recvFrameCache);
+	}
+	else {
+		recvFrameCache = av_frame_alloc();
+	}
+	av_frame_ref(recvFrameCache, tempFrame);
+	saveYUVFrameToFile(tempFrame, tempFrame->width, tempFrame->height);
+	lk.unlock();
+	av_frame_free(&tempFrame);
+	return recvFrameCache;
+}
+
+//解包rtp parameter: 输入的数据， 输入数据长度， 输出的数据， 数据数据的长度， 时间戳
+void VideoReceiver::rtp_unpackage_vd(char* bufIn, int len, uint8_t* outData, int& outLen, int64_t& timestamp) {
 	unsigned char recvbuf[1500];
 	RtpPacket* p = NULL;
 	RtpHeader* rtp_hdr = NULL;
@@ -122,6 +160,7 @@ void VideoReceiver::rtp_unpackage_vd(char* bufIn, int len) {
 
 	
 	p = (RtpPacket*)&recvbuf[0];
+	E_LOG("sizeof RtpPacket = {} , sizeof Rtpheader = {}", sizeof(RtpPacket), sizeof(RtpHeader));
 	if ((p = (RtpPacket*)malloc(sizeof(RtpPacket))) == NULL)
 	{
 		printf("RTPpacket_t MMEMORY ERROR\n");
@@ -136,21 +175,26 @@ void VideoReceiver::rtp_unpackage_vd(char* bufIn, int len) {
 		printf("RTP_FIXED_HEADER MEMORY ERROR\n");
 	}
 	I_LOG("receive rtp video data, recvCount : {}", recvCount++);
+	//将主机数转换成网络字节序
 	rtp_hdr = (RtpHeader*)&recvbuf[0];
-	//printf("版本号 	: %d\n", rtp_hdr->version);
+	rtp_hdr->seq_no = htons(rtp_hdr->seq_no);
+	rtp_hdr->timestamp = htonl(rtp_hdr->timestamp);
+	rtp_hdr->ssrc = htonl(rtp_hdr->ssrc);
+
+	printf("版本号 	: %d\n", rtp_hdr->version);
 	p->version = rtp_hdr->version;
 	p->padding = rtp_hdr->padding;
 	p->extension = rtp_hdr->extension;
 	p->cc = rtp_hdr->csrc_len;
-	//printf("标志位 	: %d\n", rtp_hdr->marker);
+	printf("标志位 	: %d\n", rtp_hdr->marker);
 	p->marker = rtp_hdr->marker;
-	//printf("负载类型	:%d\n", rtp_hdr->payloadtype);
+  printf("负载类型	:%d\n", rtp_hdr->payloadtype);
 	p->pt = rtp_hdr->payloadtype;
-	//printf("包号   	: %d \n", rtp_hdr->seq_no);
+	printf("包号   	: %d \n", rtp_hdr->seq_no);
 	p->seq_no = rtp_hdr->seq_no;
-	//printf("时间戳 	: %d\n", rtp_hdr->timestamp);
+	printf("时间戳 	: %d\n", rtp_hdr->timestamp);
 	p->timestamp = rtp_hdr->timestamp;
-	//printf("帧号   	: %d\n", rtp_hdr->ssrc);
+	printf("帧号   	: %d\n", rtp_hdr->ssrc);
 	p->ssrc = rtp_hdr->ssrc;
 
 	//end rtp_payload and rtp_header
@@ -305,6 +349,12 @@ void VideoReceiver::rtp_unpackage_vd(char* bufIn, int len) {
 		//printf("这个包有错误，30-31 没有定义\n");
 	}
 	total_recved += total_bytes;
+	memcpy(p->payload, &recvbuf[12], len - 12);
+	p->paylen = len - 12;
+	decode(p->payload, p->paylen, p->timestamp);
+	E_LOG("timestamp = {}", rtp_hdr->timestamp);
+	outLen = total_bytes;
+	timestamp = p->timestamp;
 	//printf("total_recved = %d\n", total_recved);
 	memset(recvbuf, 0, 1500);
 	free(p->payload);
@@ -331,6 +381,60 @@ NALU_t* VideoReceiver::AllocNALU(int buffersize)
 	return n;
 }
 
+
+int VideoReceiver::saveYUVFrameToFile(AVFrame* frame, int width, int height)
+{
+	int y, writeError;
+	char filename[32];
+	static int frameNumber = 0;
+
+	if (fileHandle == NULL)
+	{
+		return 0;
+	}
+
+	/*Writing Y plane data to file.*/
+	for (y = 0; y < height; y++)
+	{
+		writeError = fwrite(frame->data[0] + y * frame->linesize[0], 1, width, fileHandle);
+		if (writeError != width)
+		{
+			I_LOG("Unable to write Y plane data!");
+			return 0;
+		}
+	}
+
+	/*Dividing by 2.*/
+	height >>= 1;
+	width >>= 1;
+
+	/*Writing U plane data to file.*/
+	for (y = 0; y < height; y++)
+	{
+		writeError = fwrite(frame->data[1] + y * frame->linesize[1], 1, width, fileHandle);
+		if (writeError != width)
+		{
+			I_LOG("Unable to write U plane data!");
+			return 0;
+		}
+	}
+
+	/*Writing V plane data to file.*/
+	for (y = 0; y < height; y++)
+	{
+		writeError = fwrite(frame->data[2] + y * frame->linesize[2], 1, width, fileHandle);
+		if (writeError != width)
+		{
+			I_LOG("Unable to write V plane data!\n");
+			return 0;
+		}
+	}
+
+	frameNumber++;
+	return 1;
+}
+
 VideoReceiver::~VideoReceiver() {
 	I_LOG("VideoReceiver destruct...");
+	fclose(fileHandle);
 }

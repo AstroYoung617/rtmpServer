@@ -1,16 +1,24 @@
+extern "C"
+{
+#include "libavcodec/avcodec.h"
+#include "libavformat/avformat.h"
+#include "libswscale/swscale.h"
+#include "libavutil/imgutils.h"
+};
+
 //用于存放多个结构体
 #pragma once
 typedef struct
 {
-	unsigned char version;          	//!< Version, 2 bits, MUST be 0x2
-	unsigned char padding;			 	//!< Padding bit, Padding MUST NOT be used
-	unsigned char extension;			//!< Extension, MUST be zero
-	unsigned char cc;       	   		//!< CSRC count, normally 0 in the absence of RTP mixers 		
-	unsigned char marker;			   	//!< Marker bit
-	unsigned char pt;			   		//!< 7 bits, Payload Type, dynamically established
-	unsigned int seq_no;			   	//!< RTP sequence number, incremented by one for each sent packet 
-	unsigned int timestamp;	       //!< timestamp, 27 MHz for H.264
-	unsigned int ssrc;			   //!< Synchronization Source, chosen randomly
+	unsigned char version : 2;          	//!< Version, 2 bits, MUST be 0x2
+	unsigned char padding : 1;			 	//!< Padding bit, Padding MUST NOT be used
+	unsigned char extension : 1;			//!< Extension, MUST be zero
+	unsigned char cc : 4;       	   		//!< CSRC count, normally 0 in the absence of RTP mixers 		
+	unsigned char marker : 1;			   	//!< Marker bit
+	unsigned char pt : 7;			   		//!< 7 bits, Payload Type, dynamically established
+	uint16_t seq_no;			   	//!< RTP sequence number, incremented by one for each sent packet 
+	uint32_t timestamp;	       //!< timestamp, 27 MHz for H.264
+	uint32_t ssrc;			   //!< Synchronization Source, chosen randomly
 	unsigned char* payload;      //!< the payload including payload headers
 	unsigned int paylen;		   //!< length of payload in bytes
 } RtpPacket;
@@ -59,11 +67,11 @@ typedef struct
 	unsigned char payloadtype : 7;     /* RTP_PAYLOAD_RTSP */
 	unsigned char marker : 1;          /* expect 1 */
  /* bytes 2,3 */
-	unsigned int seq_no;
+	uint16_t seq_no;
 	/* bytes 4-7 */
-	unsigned int timestamp;
+	uint32_t timestamp;
 	/* bytes 8-11 */
-	unsigned int ssrc;              /* stream number is used here. */
+	uint32_t ssrc;              /* stream number is used here. */
 } RtpHeader;
 
 struct AdtsHeader

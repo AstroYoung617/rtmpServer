@@ -25,11 +25,11 @@ void RtmpClient::createVideoCh(int _port) {
 	I_LOG("Create an new VideoChannel port:{}", _port);
 	auto videoReceiver = new VideoReceiver(_port, vdmtx, vdcv);
 	VideoChnlVct.push_back(*videoReceiver);
-	//std::thread get_video(&RtmpClient::getVideoData, this);
+	std::thread get_video(&RtmpClient::getVideoData, this);
 	//std::this_thread::sleep_for(std::chrono::seconds(2));
-	std::thread send_video(&RtmpClient::sendVideoData, this);
-	//threadMap["pollVd"] = std::move(get_video);
-	threadMap["pushVd"] = std::move(send_video);
+	//std::thread send_video(&RtmpClient::sendVideoData, this);
+	threadMap["pollVd"] = std::move(get_video);
+	//threadMap["pushVd"] = std::move(send_video);
 }
 
 void RtmpClient::getVideoData() {
