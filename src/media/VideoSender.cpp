@@ -8,13 +8,7 @@ uint8_t* AVFrame2Img(AVFrame* pFrame) {
   int frameWidth = pFrame->width;
   int channels = 3;
 
-  //反转图像
-//  pFrame->data[0] += pFrame->linesize[0] * (frameHeight - 1);
-//  pFrame->linesize[0] *= -1;
-//  pFrame->data[1] += pFrame->linesize[1] * (frameHeight / 2 - 1);
-//  pFrame->linesize[1] *= -1;
-//  pFrame->data[2] += pFrame->linesize[2] * (frameHeight / 2 - 1);
-//  pFrame->linesize[2] *= -1;
+
 
   //创建保存yuv数据的buffer
   uint8_t* pDecodedBuffer = (uint8_t*)malloc(
