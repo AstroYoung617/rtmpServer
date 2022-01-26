@@ -19,36 +19,50 @@ struct VideoReceiver
 	VideoReceiver(int _port, std::mutex* _mutex, std::condition_variable* _vdcv);
 	~VideoReceiver();
 
+	//设置及获取videoReceiver接收的端口
 	void setPort(int _port);
 	int getPort();
 
-	uint8_t* getData();
+	//获取解码后的数据，暂时未放入deque
+	AVFrame* getData();
+
+	// NOT USE
 	void setData(uint8_t* _data);
 
-	void initSocket(); 
+	//处理接收到的Rtp数据
+	void processRecvRtpData();
+
 private:
+	void initSocket();
+
+	void closeSocket();
 	//decode 输入payload 由parser来进行处理nalu header...
-	AVFrame* decode(uint8_t* data, size_t len, int64_t ts);
+	void decode(uint8_t* data, size_t len, int64_t ts);
 
-	//解包rtp parameter: 输入的数据， 输入数据长度， 输出的数据， 数据数据的长度， 时间戳
-	void rtp_unpackage_vd(char* bufIn, int len, uint8_t* outData, int& outLen, int64_t& timestamp);
+	//解包rtp parameter: 输入的数据， 输入数据长度
+	void process(char* bufIn, int len);
 
+	//保存解码后的yuv到文件
 	int saveYUVFrameToFile(AVFrame* frame, int width, int height);
 
 	NALU_t* AllocNALU(int buffersize);
 	int port = 0;
-	//test 
-	uint8_t* outDcData = new uint8_t[4096];
-	int outDcLen = 0;
-	int64_t ts = 0;
-	int recvCount = 0;
 
 	std::mutex* mutex;
 	std::condition_variable* vdcv;
 
 	Decoder* decoder = nullptr;
 	AVFrame* recvFrameCache = nullptr;
+	AVFrame* recvFrame = nullptr;
 
-
+	//network 
+	char recvbuf[MAXDATASIZE];  //加上头最大传输数据 1500
+	int sockfd;
+	//FILE* client_fd;
+	int sin_size;
+	char sendbuf[BUFFER_SIZE];
+	struct sockaddr_in server_sockaddr, client_sockaddr;
+	AVFrame* frame;
+	int	receive_bytes = 0;
 
 };

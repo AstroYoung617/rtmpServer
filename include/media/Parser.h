@@ -1,31 +1,6 @@
-/**
- * Copyright (c) 2020, SeekLoud Team.
-* Date: 2020/6/1
-    * Main Developer: zwq
-    * Developer:xsr, gy
-* Date: 2020/10/1
-    * Main Developer: gy
-    * Developer:xsr
- * Description: 封装解封装
- * Refer:
- */
-
 #pragma once
 #include <media/common.h>
 #include <queue>
- //extern "C" {
- //#include <libavcodec/avcodec.h>
- //#include <libavfilter/buffersink.h>
- //#include <libavfilter/buffersrc.h>
- //#include <libavformat/avformat.h>
- //#include <libavutil/avutil.h>
- //#include <libavutil/fifo.h>
- //#include <libavutil/opt.h>
- //#include <libavutil/pixdesc.h>
- //#include <libswresample/swresample.h>
- //#include "libavutil/imgutils.h"
- //#include "libswscale/swscale.h"
- //}
 
 #define MTU 1300  //一个FUA的最大长度，jrtplib中对packet的最大长度限制为1400
 
