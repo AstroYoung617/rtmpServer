@@ -3,9 +3,9 @@
 #include <stdio.h>
 #include <iostream>
 #include <other/loggerApi.h>
-#include <media/encoder/videoEncoder.h>
+#include <media/encoder/VideoEncoder.h>
 #include <net/NetManager.h>
-#include <media/common.h>
+#include <media/other/common.h>
 #include <utility>
 #include <mutex>
 

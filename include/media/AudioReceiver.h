@@ -9,29 +9,53 @@
 #include <string>
 #include <other/loggerApi.h>
 #include <net/NetManager.h>
-#include <media/common.h>
+#include <media/other/common.h>
+#include <media/decoder/AudioDecoder.h>
+#include <media/other/AudioUtil.hpp>
 
 struct AudioReceiver
 {
-	AudioReceiver(int _port);
+	AudioReceiver(int _port, int _alSoundFormat, CoderInfo _decoderInfo);
 	~AudioReceiver();
 
 	void setPort(int _port);
 	int getPort();
 
-	char* getData();
+	AVFrame* getData();
 	void setData(char* _data);
+
+	//处理接收到的Rtp数据
+	void processRecvRtpData();
+
 private:
 	int port = 0;
 	char* data = nullptr;
 
-	void initSocket(int _port);
+	void initSocket();
 
-  void rtp_unpackage_au(char* bufIn, int len);
+  void process(char* bufIn, int len);
 
 	inline void writeAdtsHeaders(uint8_t* header, int dataLength, int channel,
 		int sample_rate);
 
-	void recvData();
+	//network
+	char recvbuf[MAXDATASIZE];
+	int fd;
+	int sin_size;
+	struct sockaddr_in server_sockaddr, client_sockaddr;
+	char sendbuf[10];
+
+	int recv_bytes = 0; //接收到的字节数，recvFrom函数的返回值赋给它
+
+		// 音频封装格式
+	AudioInfo info, outInfo;
+	CodecType decoderCodecType;
+	CoderInfo decoderInfo;
+
+	//decoder
+	std::unique_ptr<AuDecoder> decoder;
+
+	AVFrame* recvFrame = nullptr;
+
 };
 

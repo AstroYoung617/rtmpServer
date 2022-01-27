@@ -1,8 +1,4 @@
-
 #include "media/encoder/videoEncoder.h"
-#include "media/common.h"
-#include "other/loggerApi.h"
-#include "media/Parser.h"
 
 #define ENPARSER 0
 #define LIMITINIT 0

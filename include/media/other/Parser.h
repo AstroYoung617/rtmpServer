@@ -1,5 +1,6 @@
 #pragma once
-#include <media/common.h>
+#include <media/other/common.h>
+#include <tuple> //使用C++11的tuple需要引入该头文件
 #include <queue>
 
 #define MTU 1300  //一个FUA的最大长度，jrtplib中对packet的最大长度限制为1400

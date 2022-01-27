@@ -2,7 +2,9 @@
 extern "C" {
 #include "libswscale/swscale.h"
 };
-#include <media/common.h>
+#include <other/loggerApi.h>
+#include <media/other/Parser.h>
+#include <media/other/common.h>
 #include <list>
 #include <mutex>
 #include <map>

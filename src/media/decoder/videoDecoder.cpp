@@ -1,16 +1,4 @@
-/**
- * Copyright (c) 2020, SeekLoud Team.
-* Date: 2020/6/1
-		* Main Developer: xsr
-		* Developer:wxy, gy
- * Description: ½âÂëÆ÷
- * Refer:
- */
-
-#include "media/decoder/videoDecoder.h"
-#include "media/common.h"
-#include "other/loggerApi.h"
-#include "media/Parser.h"
+#include "media/decoder/VideoDecoder.h"
 
 #define NONPARSER 0
 
@@ -21,15 +9,15 @@
 #endif
 
 //copy from kankan
-Decoder::Decoder() {
+VdDecoder::VdDecoder() {
 	// Ê¹ÓÃ init
 }
 
-Decoder::~Decoder() {
+VdDecoder::~VdDecoder() {
 	//stop();
 }
 
-void Decoder::init() {
+void VdDecoder::init() {
 	if (!decodeParser) {
 		decodeParser = std::make_shared<Parser>();
 	}
@@ -96,7 +84,7 @@ void Decoder::init() {
 	decodeReady = true;
 }
 
-void Decoder::push(uint8_t* data, int len, int64_t timestamp) {
+void VdDecoder::push(uint8_t* data, int len, int64_t timestamp) {
 	std::unique_lock<std::mutex> locker(sendMtx);
 	if (!decodeReady) {
 		E_LOG("decode not init");
@@ -141,7 +129,7 @@ void Decoder::push(uint8_t* data, int len, int64_t timestamp) {
 #endif
 }
 
-int Decoder::poll(AVFrame* outData) {
+int VdDecoder::poll(AVFrame* outData) {
 	std::unique_lock<std::mutex> locker(sendMtx);
 	//sendCv.wait(locker, [&] {return !playList.empty(); });
 	if (playList.empty()) {
@@ -154,11 +142,11 @@ int Decoder::poll(AVFrame* outData) {
 	return 0;
 }
 
-void Decoder::setPixFmt(AVPixelFormat fmt) {
+void VdDecoder::setPixFmt(AVPixelFormat fmt) {
 	dstPixFmt = fmt;
 }
 
-void Decoder::stop() {
+void VdDecoder::stop() {
 	std::unique_lock<std::mutex> locker(sendMtx);
 	if (outBuff) {
 		av_free(outBuff);
@@ -188,7 +176,7 @@ void Decoder::stop() {
 	decodeReady = false;
 }
 
-void Decoder::scale(AVFrame* frame, int width, int height) {
+void VdDecoder::scale(AVFrame* frame, int width, int height) {
 	if (outputWidth != width || outputHeight != height) {
 		outputWidth = width;
 		outputHeight = height;
@@ -220,10 +208,10 @@ void Decoder::scale(AVFrame* frame, int width, int height) {
 }
 
 // private
-void Decoder::setAVFormatContext(AVFormatContext* formatContext) {
+void VdDecoder::setAVFormatContext(AVFormatContext* formatContext) {
 	formatCtx = formatContext;
 }
-void Decoder::decode(AVPacket* pkt, uint64_t ts) {
+void VdDecoder::decode(AVPacket* pkt, uint64_t ts) {
 	int ret;
 	ret = avcodec_send_packet(c, pkt);
 	if (ret < 0) {
@@ -253,7 +241,7 @@ void Decoder::decode(AVPacket* pkt, uint64_t ts) {
 		av_frame_free(&frameYUV);
 	}
 }
-void Decoder::initSws()
+void VdDecoder::initSws()
 {
 	AVPixelFormat srcPixFmt = AV_PIX_FMT_YUV420P;
 	sws_ctx = sws_getCachedContext(sws_ctx, inputWidth, inputHeight, srcPixFmt, outputWidth, outputHeight, dstPixFmt, SWS_BILINEAR, NULL, NULL, NULL);
@@ -270,7 +258,7 @@ void Decoder::initSws()
 	outBuff = (uint8_t*)av_malloc(av_image_get_buffer_size(dstPixFmt, outputWidth, outputHeight, ALIGN) * sizeof(uint8_t));
 	I_LOG("init decoder sws success");
 }
-void Decoder::changeFmtAndSave(AVFrame* frameYUV) {
+void VdDecoder::changeFmtAndSave(AVFrame* frameYUV) {
 	if (frameYUV->width != inputWidth || frameYUV->height != inputHeight) {
 		inputWidth = frameYUV->width;
 		inputHeight = frameYUV->height;

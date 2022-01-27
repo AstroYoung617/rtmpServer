@@ -47,13 +47,13 @@ int NetManager::rtmpInit(int step) {
 
     //新建一个输出流
 
-    //if (audio_st == nullptr) {
-    //  audio_st = avformat_new_stream(pFormatCtx, NULL);
-    //  if (audio_st == NULL) {
-    //    E_LOG("failed allocating audio stream\n");
-    //    return -1;
-    //  }
-    //}
+    if (audio_st == nullptr) {
+      audio_st = avformat_new_stream(pFormatCtx, NULL);
+      if (audio_st == NULL) {
+        E_LOG("failed allocating audio stream\n");
+        return -1;
+      }
+    }
 
   }
   else {

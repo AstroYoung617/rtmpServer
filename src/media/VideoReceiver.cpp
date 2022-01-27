@@ -98,7 +98,7 @@ void VideoReceiver::processRecvRtpData() {
 void VideoReceiver::decode(uint8_t* data, size_t len, int64_t ts) {
 	if (!decoder) {
 		D_LOG("new a video decoder...");
-		decoder = new Decoder();
+		decoder = new VdDecoder();
 		decoder->setPixFmt(AV_PIX_FMT_YUV420P);
 		decoder->init();
 	}
@@ -136,13 +136,6 @@ void VideoReceiver::process(char* bufIn, int len) {
 	unsigned char recvbuf[1500];
 	RtpPacket* p = NULL;
 	RtpHeader* rtp_hdr = NULL;
-	NALU_HEADER* nalu_hdr = NULL;
-	NALU_t* n = NULL;
-	FU_INDICATOR* fu_ind = NULL;
-	FU_HEADER* fu_hdr = NULL;
-	int total_bytes = 0;                 //当前包传出的数据
-	static int total_recved = 0;         //一共传输的数据
-	int fwrite_number = 0;               //存入文件的数据长度
 
 	memcpy(recvbuf, bufIn, len);          //复制rtp包 
 	
@@ -170,18 +163,9 @@ void VideoReceiver::process(char* bufIn, int len) {
 	memcpy(p->payload, &recvbuf[12], len - 12);
 	p->paylen = len - 12;
 	decode(p->payload, p->paylen, p->timestamp);
-	E_LOG("timestamp = {}", rtp_hdr->timestamp);
-	//printf("total_recved = %d\n", total_recved);
 	memset(recvbuf, 0, 1500);
 	free(p->payload);
 	free(p);
-	//freeNalu
-	if (n)
-	{
-		free(n);
-	}
-	//结束解包
-	//
 	return;
 }
 

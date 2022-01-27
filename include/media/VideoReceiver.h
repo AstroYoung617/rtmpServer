@@ -9,8 +9,8 @@
 #include <string>
 #include <other/loggerApi.h>
 #include <net/NetManager.h>
-#include <media/common.h>
-#include <media/decoder/videoDecoder.h>
+#include <media/other/common.h>
+#include <media/decoder/VideoDecoder.h>
 #include <utility>
 #include <mutex>
 
@@ -51,7 +51,7 @@ private:
 	std::mutex* mutex;
 	std::condition_variable* vdcv;
 
-	Decoder* decoder = nullptr;
+	VdDecoder* decoder = nullptr;
 	AVFrame* recvFrameCache = nullptr;
 	AVFrame* recvFrame = nullptr;
 

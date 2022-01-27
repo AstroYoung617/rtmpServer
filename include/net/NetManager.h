@@ -27,7 +27,7 @@ extern "C" {
 #include <libavformat/avformat.h>
 };
 
-#define ADTS_HEADER_LENGTH 7
+//#define ADTS_HEADER_LENGTH 7
 #define MAXDATASIZE 1500
 #define AAC_FILE "./recvAAC.aac"
 #define BUFFER_SIZE	10

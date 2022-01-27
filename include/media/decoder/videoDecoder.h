@@ -1,23 +1,10 @@
-/**
- * Copyright (c) 2020, SeekLoud Team.
-* Date: 2020/6/1
-	* Main Developer: xsr
-	* Developer:
-* Date: 2021/3/25
-	* Main Developer: lrj
-	* Developer: gy lyj
-* Date: 2020/6/1
-	* Main Developer: lrj
-	* Developer: rys
- * Description: api
- * Refer:
- */
-
 #pragma once
 extern "C" {
 #include "libswscale/swscale.h"
 };
-#include <media/common.h>
+#include <other/loggerApi.h>
+#include <media/other/common.h>
+#include <media/other/Parser.h>
 #include <list>
 #include <mutex>
 #include <map>
@@ -28,7 +15,7 @@ extern "C" {
 
 class Parser; //先声明，定义在内部
 
-class Decoder{
+class VdDecoder {
 private:
 	//编码相关
 	const AVCodec* codec = nullptr;
@@ -58,8 +45,8 @@ private:
 	void changeFmtAndSave(AVFrame* frameYUV);
 	void initSws();
 public:
-	Decoder();
-	~Decoder();
+	VdDecoder();
+	~VdDecoder();
 
 	virtual void init();
 	virtual void push(uint8_t* data, int len, int64_t timestamp);
