@@ -125,7 +125,7 @@ void RtmpClient::setStart(bool _start) {
 		encoderinfo.inFormate = MyAVSampleFormat::AV_SAMPLE_FMT_S16;
 
 		encoderinfo.outChannels = 1;
-		encoderinfo.outSampleRate = 32000;
+		encoderinfo.outSampleRate = 44100;
 		encoderinfo.outFormate = MyAVSampleFormat::AV_SAMPLE_FMT_FLTP;
 		encoderinfo.cdtype = CodecType::AAC;
 		encoderinfo.muxType = MuxType::ADTS;
