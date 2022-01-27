@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 #include <other/loggerApi.h>
 #include <business/rtmpClient.h>
 
@@ -7,6 +8,8 @@ int main() {
 	rtmpClient.printData(1);
 	int port;
 	int start;
+	string rtmpURL;
+
 	std::cout << "please input the audio port(0 to skip):";
 	while (std::cin >> port) {
 		rtmpClient.setPort(1, port);
@@ -20,7 +23,7 @@ int main() {
 		break;
 	}
 	std::cout << "---------------------start?---------------------" << std::endl;
-	std::cout << "if want start, print 1, else 0 : " << std::endl;
+	std::cout << "if want start, print 1, else 0 : ";
 	while (std::cin >> start) {
 		rtmpClient.setStart(start);
 		getchar();

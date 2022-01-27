@@ -26,6 +26,9 @@ struct VideoReceiver
 	//获取解码后的数据，暂时未放入deque
 	AVFrame* getData();
 
+	//获取解码后的数据，暂时未放入deque
+	AVPacket* getPacket();
+
 	// NOT USE
 	void setData(uint8_t* _data);
 
@@ -36,6 +39,12 @@ private:
 	void initSocket();
 
 	void closeSocket();
+
+	void initParser();
+
+	//获取AVPacket
+	void gnrtPacket(uint8_t* data, size_t len, int64_t ts);
+
 	//decode 输入payload 由parser来进行处理nalu header...
 	void decode(uint8_t* data, size_t len, int64_t ts);
 
@@ -54,6 +63,15 @@ private:
 	VdDecoder* decoder = nullptr;
 	AVFrame* recvFrameCache = nullptr;
 	AVFrame* recvFrame = nullptr;
+
+	AVPacket* pkt = nullptr;
+	AVPacket* packet = nullptr;
+	AVFormatContext* formatCtx = nullptr;
+	AVCodecParserContext* parser = NULL;
+	const AVCodec* codec = nullptr;
+	std::shared_ptr<Parser> decodeParser = nullptr;
+	AVCodecContext* c = NULL;
+	uint8_t* h264Data = nullptr;
 
 	//network 
 	char recvbuf[MAXDATASIZE];  //加上头最大传输数据 1500

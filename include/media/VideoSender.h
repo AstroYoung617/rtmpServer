@@ -132,6 +132,7 @@ struct VideoSender {
   void setStartTime(long long _startTime);
   void initEncoder(const VideoDefinition& captureSize, int frameRate);
 	int sendFrame(AVFrame* frame);
+  int sendPacket(AVPacket* packet);
 private:
   //netManager
   std::shared_ptr<NetManager> netManager = nullptr;

@@ -91,6 +91,32 @@ int VideoSender::stop() {
   return 0;
 }
 
+int VideoSender::sendPacket(AVPacket* packet) {
+  std::unique_lock<std::mutex> encoderLk(*mutex4Encoder);
+  //AVPacket* packet = _packet;
+  if (packet) {
+    packet->duration = ceil(1000 / frameRate);
+    count++;
+    packet->pts = count * packet->duration;
+    packet->dts = packet->pts;
+    I_LOG("video packet index {} pts {} dts {} dura {}", count, packet->pts, packet->dts, packet->duration);
+    packet->stream_index = 0;
+    if (netManager) {
+      //long long now = GetTickCount64();
+      //if (packet->pts > now)
+      //{
+      //  std::this_thread::sleep_for(std::chrono::microseconds((packet->pts - now) * 1000));
+      //}
+      int ret = netManager->sendRTMPData(packet);
+      encoderLk.unlock();
+      //fix memory leak, 这种内存泄漏的地方尤其要注意，是因为使用的函数直接返回数组，那么就应该在不再使用的时候进行释放。
+      return ret;
+    }
+  }
+  encoderLk.unlock();
+  av_packet_free(&packet);
+  return -1;
+}
 
 int VideoSender::sendFrame(AVFrame* frame) {
   std::unique_lock<std::mutex> encoderLk(*mutex4Encoder);

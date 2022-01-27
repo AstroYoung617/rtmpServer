@@ -12,6 +12,7 @@ VideoReceiver::VideoReceiver(int _port, std::mutex* _mutex, std::condition_varia
 	vdcv = _vdcv;
 	//初始化通道
 	initSocket();
+	initParser();
 }
 
 
@@ -28,6 +29,14 @@ AVFrame* VideoReceiver::getData() {
 	if (recvFrameCache && recvFrameCache->data[0]) {
 		lk.unlock();
 		return recvFrameCache;
+	}
+	else
+		return nullptr;
+}
+
+AVPacket* VideoReceiver::getPacket() {
+	if (packet) {
+		return packet;
 	}
 	else
 		return nullptr;
@@ -93,6 +102,69 @@ void VideoReceiver::processRecvRtpData() {
 		process(recvbuf, receive_bytes);
 	}
 	return;
+}
+void VideoReceiver::initParser() {
+	if (!decodeParser) {
+		decodeParser = std::make_shared<Parser>();
+	}
+	codec = avcodec_find_decoder(AV_CODEC_ID_H264);
+	if (!codec) {
+		throw std::runtime_error("Codec not found");
+	}
+
+	pkt = av_packet_alloc();
+	packet = av_packet_alloc();
+	if (!pkt)
+		throw std::runtime_error("pkt empty");
+
+	c = avcodec_alloc_context3(codec);
+
+	if (formatCtx) {
+		I_LOG("AVFormatContext exist, init AVFormatContext");
+		if (avcodec_parameters_to_context(c, formatCtx->streams[0]->codecpar) != 0) {
+			throw std::runtime_error("video Could not copy codec context");
+		}
+		I_LOG("codec_id: {}", formatCtx->streams[0]->codecpar->codec_id);
+		I_LOG("bit_rate: {}", formatCtx->streams[0]->codecpar->bit_rate);
+		I_LOG("format: {}", formatCtx->streams[0]->codecpar->format);
+		I_LOG("codec_tag: {}", formatCtx->streams[0]->codecpar->codec_tag);
+		I_LOG("extradata_size: {}", formatCtx->streams[0]->codecpar->extradata_size);
+		I_LOG("profile: {}", formatCtx->streams[0]->codecpar->profile);
+		I_LOG("level: {}", formatCtx->streams[0]->codecpar->level);
+		I_LOG("field_order: {}", formatCtx->streams[0]->codecpar->field_order);
+		I_LOG("color_range: {}", formatCtx->streams[0]->codecpar->color_range);
+		I_LOG("color_primaries: {}", formatCtx->streams[0]->codecpar->color_primaries);
+		I_LOG("color_trc: {}", formatCtx->streams[0]->codecpar->color_trc);
+		I_LOG("color_space: {}", formatCtx->streams[0]->codecpar->color_space);
+		I_LOG("chroma_location: {}", formatCtx->streams[0]->codecpar->chroma_location);
+
+		if (avcodec_open2(c, codec, nullptr) < 0) {
+			throw std::runtime_error("video Could not open codec");
+		}
+	}
+	else {
+
+		c->pix_fmt = AV_PIX_FMT_YUV420P; // todo set
+
+		c->color_range = AVCOL_RANGE_MPEG;
+
+		c->codec_id = codec->id;
+		AVDictionary* dic = nullptr;
+
+		if (avcodec_open2(c, codec, &dic) < 0) {
+			throw std::runtime_error("video Could not open codec");
+		}
+	}
+
+	if (!c) {
+		throw std::runtime_error("Could not allocate video codec context");
+	}
+
+	parser = av_parser_init(codec->id);
+	if (!parser) {
+		throw std::runtime_error("parser not found");
+	}
+
 }
 
 void VideoReceiver::decode(uint8_t* data, size_t len, int64_t ts) {
@@ -162,12 +234,40 @@ void VideoReceiver::process(char* bufIn, int len) {
 	//如果只需要对它进行解码的话，直接获取到payload就行了，不需要现在进行解包的步骤
 	memcpy(p->payload, &recvbuf[12], len - 12);
 	p->paylen = len - 12;
-	decode(p->payload, p->paylen, p->timestamp);
+	//decode(p->payload, p->paylen, p->timestamp);
+	gnrtPacket(p->payload, p->paylen, p->timestamp);
 	memset(recvbuf, 0, 1500);
 	free(p->payload);
 	free(p);
 	return;
 }
+
+void VideoReceiver::gnrtPacket(uint8_t* data, size_t len, int64_t timestamp) {
+	h264Data = new uint8_t[1024 * 1024];
+
+	// 获取的数据先存放起来，拼接获取完整的数据
+	decodeParser->inputPayLoad(data, len, timestamp);
+	uint64_t ts = 0;
+	int inputLen = decodeParser->getH264(h264Data, ts);
+	int count = 0;
+	av_packet_unref(packet);
+	av_packet_unref(pkt);
+	while (inputLen > 0) {
+		int ret = av_parser_parse2(parser, c, &pkt->data, &pkt->size, h264Data + count,
+			inputLen, AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
+		if (ret < 0) {
+			throw std::runtime_error("get parsed data error");
+		}
+		count += ret;
+		inputLen -= ret;
+		if (pkt->size) {
+			av_packet_ref(packet, pkt);
+		}
+	}
+	delete h264Data;
+	h264Data = nullptr;
+}
+
 
 NALU_t* VideoReceiver::AllocNALU(int buffersize)
 {

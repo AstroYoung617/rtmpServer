@@ -30,11 +30,11 @@ private:
 	uint8_t* outBuff = nullptr;
 	uint8_t* h264Data = nullptr;
 
+	std::shared_ptr<Parser> decodeParser = nullptr;
 	SwsContext* sws_ctx = nullptr;
 	AVPixelFormat dstPixFmt = AV_PIX_FMT_NONE;
 
 	std::list<AVFrame*> playList{};
-	std::shared_ptr<Parser> decodeParser = nullptr;
 
 	//locker
 	std::mutex sendMtx{};

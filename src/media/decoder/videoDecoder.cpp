@@ -91,6 +91,7 @@ void VdDecoder::push(uint8_t* data, int len, int64_t timestamp) {
 		return;
 	}
 #if NONPARSER
+	av_packet_unref(pkt);
 	while (len > 0) {
 		int ret = av_parser_parse2(parser, c, &pkt->data, &pkt->size, data,
 			len, AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);

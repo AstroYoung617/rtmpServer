@@ -25,6 +25,7 @@ struct RtmpClient {
 	void setPort(int _type, int _port); //type : 1 (audio)  2 (video)
 	void send2Rtmp(int _type);					//type : 1 (audio)  2 (video)  3(audio & video)
 	void setStart(bool start);
+	void setRtmpURL(string _rtmpURL);
 private:
 	void createAudioCh(int _port);
 	void createVideoCh(int _port);
@@ -58,6 +59,7 @@ private:
 
 
 	AVFrame* recvFrameVd = nullptr;
+	AVPacket* recvPacketVd = nullptr;
 	AVFrame* recvFrameAu = nullptr;
 
 	//传递给videoReceiver和videoSender的互斥量及锁
