@@ -5,7 +5,6 @@
 RtmpClient::RtmpClient() {
 	I_LOG("RtmpClient construct success");
 	netManager = std::make_shared<NetManager>();  
-	netManager->setRtmpUrl(rtmpURL);
 }
 
 
@@ -93,11 +92,13 @@ void RtmpClient::getVideoData() {
 			std::unique_lock<std::mutex> lk(*mtx);
 			cv->wait(lk);
 		}
+		
 		videoRecv.processRecvRtpData();
 		//先只用一个AVFrame作为存储，将其传递给videoSender
 		recvFrameVd = videoRecv.getData();
 		//TODO 之后将多个videoRecv的data进行拼接后传给videoSender
 		//lk.unlock();
+		vdcv->notify_one();
 	}
 }
 
@@ -107,10 +108,14 @@ void RtmpClient::sendVideoData() {
 			std::unique_lock<std::mutex> lk(*mtx);
 			cv->wait(lk);
 		}
+		std::unique_lock<std::mutex> lck(*vdmtx);
+		vdcv->wait(lck);
 		if (recvFrameVd && recvFrameVd->data[0])
 			send2Rtmp(2);
-		std::this_thread::sleep_for(std::chrono::milliseconds(50));
-		//lk.unlock();
+		//std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+		lck.unlock();
+
 	}
 }
 
@@ -182,6 +187,11 @@ void RtmpClient::send2Rtmp(int _type) {
 	else if (_type == 3) {
 		;
 	}
+}
+
+void RtmpClient::setURL(string URL) {
+	rtmpURL = URL;
+	netManager->setRtmpUrl(rtmpURL);
 }
 
 RtmpClient::~RtmpClient() {
