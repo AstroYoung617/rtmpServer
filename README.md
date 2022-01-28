@@ -5,6 +5,25 @@
 
 *小声bb: 目前以上内容还未完成，只测试了发送h264及aac文件或者mp4文件至rtmp服务器，完成了把这句话删了*
 
+## 框架 
+    
+    *RTPSENDER*                 *AUDIO/VIDEO RECEIVER*      *RTMPCLIENT*
+    +---------------------------+---------------------------+------------------------------+
+    |                           |                           |                              |
+    |                demux      |               decode      |                              |
+    |  mp4/file/ -------------->|  AVPacket  -------------->| AVFrame(YUV/RGB/pcm)         |
+    |   stream                  | h264(NALU)                |    |                         |
+    |                           |    aac                    |    |                         |
+    +---------------------------+---------------------------+    |sws_scale / mix          |
+    |                           |                           |    |    combine              |
+    |                  mux      |                encode     |    V                         |
+    |  rtmp/flv  <--------------|  AVPacket  <------------- |AVFrame(YUV/RGB/pcm)/uint8_t[]|
+    |                           |  h264/aac                 |                              |
+    |                           |                           |                              |
+    +---------------------------+---------------------------+------------------------------+
+    *NETMANAGER*                *AUDIO/VIDEO SENDER* 
+
+
 ## 发展
 
 - 2022.1.12 完成项目搭建，进行了MP4、h264、aac的rtmp发送测试，使用ffmpeg尝试了rtp发送测试，因为jrtplib被ban了，采用了live555这个开源的rtp库，完成了编译以及发送测试，待进行接收测试。
