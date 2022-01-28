@@ -25,6 +25,7 @@ struct RtmpClient {
 	void setPort(int _type, int _port); //type : 1 (audio)  2 (video)
 	void send2Rtmp(int _type);					//type : 1 (audio)  2 (video)  3(audio & video)
 	void setStart(bool start);
+	void setURL(string URL);
 private:
 	void createAudioCh(int _port);
 	void createVideoCh(int _port);
@@ -69,6 +70,7 @@ private:
 	std::condition_variable* cv = new std::condition_variable;
 
 	//rtmp 
-	string rtmpURL = "rtmp://live-push.bilivideo.com/live-bvc/?streamname=live_98579344_16311849&key=41a6b8b86a64eaeccb3efe3679940c43&schedule=rtmp&pflag=1";
+	string rtmpURL = "";
+	//string rtmpURL = "rtmp://live-push.bilivideo.com/live-bvc/?streamname=live_98579344_16311849&key=41a6b8b86a64eaeccb3efe3679940c43&schedule=rtmp&pflag=1";
 	//string rtmpURL = "E:/testrtmp.flv";
 };
