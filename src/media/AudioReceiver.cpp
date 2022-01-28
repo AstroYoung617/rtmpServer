@@ -1,10 +1,35 @@
 #include <iostream>
 #include <media/AudioReceiver.h>
-FILE* outFile = nullptr;
+FILE* outFile = fopen("E:/common/rtmpServer.pcm", "wb");
 
-AudioReceiver::AudioReceiver(int _port) {
+AudioReceiver::AudioReceiver(int _port, int _alSoundFormat, CoderInfo _decoderInfo) {
 	I_LOG("AudioReceiver struct success");
-	initSocket(_port);
+	port = _port;
+	initSocket();
+	this->decoderInfo = _decoderInfo;
+	// init netEq & audioInfo
+	AudioInfo in;
+	in.sample_rate = decoderInfo.inSampleRate;
+	in.channels = decoderInfo.inChannels;
+	in.sample_fmt = (AVSampleFormat)(decoderInfo.inFormate);
+	in.channel_layout = av_get_default_channel_layout(decoderInfo.inChannels);
+	if (decoderInfo.cdtype == CodecType::PCMA) {
+		in.pcmaTimeSeg = 30;
+	}
+	AudioInfo out;
+	out.sample_rate = decoderInfo.outSampleRate;
+	out.channels = decoderInfo.outChannels;
+	out.sample_fmt = (AVSampleFormat)(decoderInfo.outFormate);
+	out.channel_layout = av_get_default_channel_layout(decoderInfo.outChannels);
+
+	decoderCodecType = decoderInfo.cdtype;
+
+	info.setInfo(decoderInfo.inSampleRate, (AVSampleFormat)decoderInfo.inFormate,
+		decoderInfo.inChannels);
+	outInfo.setInfo(decoderInfo.outSampleRate, (AVSampleFormat)decoderInfo.outFormate,
+		decoderInfo.outChannels);
+	decoder = std::make_unique<AuDecoder>();
+	decoder->init(in, out, decoderCodecType, 0);
 }
 
 void AudioReceiver::setPort(int _port) {
@@ -15,23 +40,15 @@ int AudioReceiver::getPort() {
 	return port;
 }
 
-char* AudioReceiver::getData() {
-	return data;
+AVFrame* AudioReceiver::getData() {
+	return recvFrame;
 }
 
 void AudioReceiver::setData(char* _data) {
 	data = _data;
 }
 
-void AudioReceiver::initSocket(int _port) {
-	char recvbuf[MAXDATASIZE];
-	int fd;
-	int sin_size;
-	struct sockaddr_in server_sockaddr, client_sockaddr;
-	char sendbuf[10];
-
-	int recv_bytes = 0; //接收到的字节数，recvFrom函数的返回值赋给它
-
+void AudioReceiver::initSocket() {
 	//socket 操作
 	 //加载winsock 无论是客户端还是服务器都需要
 	WORD socketVersion = MAKEWORD(2, 2);
@@ -51,7 +68,7 @@ void AudioReceiver::initSocket(int _port) {
 
 	server_sockaddr.sin_family = AF_INET;
 	server_sockaddr.sin_addr.s_addr = INADDR_ANY;//0.0.0.0不确定地址  
-	server_sockaddr.sin_port = htons(_port);
+	server_sockaddr.sin_port = htons(port);
 	memset(&(server_sockaddr.sin_zero), 0, 8);  //填充0以保持与struct sockaddr同样大小
 
 	//将地址和socket进行绑定
@@ -66,17 +83,20 @@ void AudioReceiver::initSocket(int _port) {
 	//地址长度
 	sin_size = sizeof(struct sockaddr_in);
 	printf("waiting for client connection...\n");
-	while ((recv_bytes = recvfrom(fd, recvbuf, MAXDATASIZE, 0, (struct sockaddr*)&client_sockaddr, &sin_size)) > 0)
+	return;
+}
+
+void AudioReceiver::processRecvRtpData() {
+	//接收从客户端发来的数据
+	RtpPacket* p = NULL;
+	RtpHeader* rtp_hdr = NULL;
+
+	if ((recv_bytes = recvfrom(fd, recvbuf, MAXDATASIZE, 0, (struct sockaddr*)&client_sockaddr, &sin_size)) > 0)
 	{
 		if (strncmp(recvbuf, "over", 4) == 0)
-			break;
-		outFile = fopen(AAC_FILE, "ab+");
-		rtp_unpackage_au(recvbuf, recv_bytes);
-		fclose(outFile);
+			return;
+		process(recvbuf, recv_bytes);
 	}
-	strcpy(sendbuf, "success");
-	sendto(fd, sendbuf, 10, 0, (struct sockaddr*)&client_sockaddr, sin_size);
-	closesocket(fd);
 	return;
 }
 
@@ -144,15 +164,11 @@ inline void AudioReceiver::writeAdtsHeaders(uint8_t* header, int dataLength, int
 	header[6] = (uint8_t)0xFC;
 }
 
-void AudioReceiver::rtp_unpackage_au(char* bufIn, int len) {
+void AudioReceiver::process(char* bufIn, int len) {
 	unsigned char recvbuf[1500];
 	RtpPacket* rtp_pkt = NULL;
 	RtpHeader* rtp_hdr = NULL;
 	uint8_t* adts_hdr = new uint8_t[7];
-	int total_bytes = 0;						//当前包传出的数据
-	static int total_recved = 0;		//总传输的数据
-	int fwrite_number = 0;					//写入文件的数据长度
-
 	memcpy(recvbuf, bufIn, len);
 	std::cout << "总长度 = " << len << std::endl;
 
@@ -171,7 +187,12 @@ void AudioReceiver::rtp_unpackage_au(char* bufIn, int len) {
 	{
 		printf("RTP_FIXED_HEADER MEMORY ERROR\n");
 	}
-	printf("receive rtp audio data\n");
+	////将主机数转换成网络字节序
+	rtp_hdr = (RtpHeader*)&recvbuf[0];
+	rtp_hdr->seq_no = htons(rtp_hdr->seq_no);
+	rtp_hdr->timestamp = htonl(rtp_hdr->timestamp);
+	rtp_hdr->ssrc = htonl(rtp_hdr->ssrc);
+
 	rtp_hdr = (RtpHeader*)&recvbuf[0];
 	//printf("版本号 	: %d\n", rtp_hdr->version);
 	rtp_pkt->version = rtp_hdr->version;
@@ -184,7 +205,7 @@ void AudioReceiver::rtp_unpackage_au(char* bufIn, int len) {
 	rtp_pkt->pt = rtp_hdr->payloadtype;
 	//printf("包号   	: %d \n", rtp_hdr->seq_no);
 	rtp_pkt->seq_no = rtp_hdr->seq_no;
-	//printf("时间戳 	: %d\n", rtp_hdr->timestamp);
+	printf("时间戳 	: %d\n", rtp_hdr->timestamp);
 	rtp_pkt->timestamp = rtp_hdr->timestamp;
 	//printf("帧号   	: %d\n", rtp_hdr->ssrc);
 	rtp_pkt->ssrc = rtp_hdr->ssrc;
@@ -192,23 +213,39 @@ void AudioReceiver::rtp_unpackage_au(char* bufIn, int len) {
 	memcpy(rtp_pkt->payload, &recvbuf[16], len - 16);
 	rtp_pkt->paylen = len - 16;
 	writeAdtsHeaders(adts_hdr, rtp_pkt->paylen, 1, 32000);
-
-	fwrite(adts_hdr, 1, 7, outFile);
-	fwrite_number = fwrite(rtp_pkt->payload, 1, rtp_pkt->paylen, outFile);
-
-	printf("paylen = %d, write in filelen = %d\n", rtp_pkt->paylen, fwrite_number);
+	//构造payload
+	uint8_t* payload = new uint8_t[7 + rtp_pkt->paylen];
+	for (int i = 0; i < 7; i++) {
+			payload[i] = adts_hdr[i];
+	}
+	for (int i = 0; i < rtp_pkt->paylen; i++) {
+		payload[i + 7] = rtp_pkt->payload[i];
+	}
+	//TODO decode
+	int frame_size;
+	uint8_t* adts_buff;
+	//如果是aac格式
+	frame_size = 0;
+	adts_buff = new uint8_t[3000];
+	std::pair<int&, uint8_t*> demuxAudioFrame(frame_size, adts_buff);
+	//解封装
+	decoder->demux(payload, demuxAudioFrame);
+	decoder->addPacket(demuxAudioFrame.second, demuxAudioFrame.first, rtp_pkt->timestamp, rtp_pkt->seq_no);
+	//decoder->addPacket(payload, rtp_pkt->paylen + 7, rtp_pkt->timestamp, rtp_pkt->seq_no);
+	recvFrame = decoder->getFrame();
+	if (recvFrame && recvFrame->data[0]) {
+		len = recvFrame->nb_samples * av_get_bytes_per_sample(static_cast<AVSampleFormat>(recvFrame->format)) * recvFrame->channels;
+		uint8_t* data = new uint8_t[len + 1];
+		fwrite(recvFrame->data[0], 1, len, outFile);
+	}
 	//释放资源
 	memset(recvbuf, 0, 1500);
 	free(rtp_pkt->payload);
 	free(rtp_pkt);
-	delete[] adts_hdr;
 	//结束
 	return;
 }
 
-void AudioReceiver::recvData() {
-
-}
 
 AudioReceiver::~AudioReceiver() {
 I_LOG("AudioReceiver destruct...");

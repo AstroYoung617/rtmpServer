@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include <iostream>
+#include <other/loggerApi.h>
 //对于C++而言的网络库，需要引入下面的头文件和lib库
 
 //接收方实现组播接收需要加入组播，才能接收到组播消息
@@ -26,7 +27,7 @@ extern "C" {
 #include <libavformat/avformat.h>
 };
 
-#define ADTS_HEADER_LENGTH 7
+//#define ADTS_HEADER_LENGTH 7
 #define MAXDATASIZE 1500
 #define AAC_FILE "./recvAAC.aac"
 #define BUFFER_SIZE	10
@@ -62,4 +63,7 @@ private:
   AVOutputFormat* fmt = nullptr;
   AVStream* video_st = nullptr;
   AVStream* audio_st = nullptr;
+
+  std::string rtmpUrl = "rtmp://live-push.bilivideo.com/live-bvc/?streamname=live_352390639_21965190&key=24f4401750f2d2d7c1590021bc0946d0&schedule=rtmp&pflag=9";
+  std::unique_ptr<std::mutex> mutex4Sender = nullptr;
 };

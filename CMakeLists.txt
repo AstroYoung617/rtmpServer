@@ -44,7 +44,11 @@ list(APPEND RESOURCE_FILES resources/application.ini)
 
 #添加cpp文件，相当于引入include
 aux_source_directory(src/media CPPLIST)
+aux_source_directory(src/net CPPLIST)
 aux_source_directory(src/business CPPLIST)
+aux_source_directory(src/media/decoder CPPLIST)
+aux_source_directory(src/media/encoder CPPLIST)
+aux_source_directory(src/media/other CPPLIST)
 
 if(WIN32)
     add_executable (${PROJECT_NAME}
@@ -52,9 +56,10 @@ if(WIN32)
             ${CPPLIST}
             #tests/mp42rtmp.cpp
             #tests/h264aac2rtmp.cpp
-            #tests/test.cpp
+            #tests/h2642rtmp.cpp
+            tests/test.cpp
             #tests/rtpSystem.cpp
-            tests/rtpStudy/rtp.cpp
+            #tests/rtpStudy/rtp.cpp
             #tests/rtpStudy/rtpSendaac.cpp
             #tests/rtpStudy/rtpServer2.cpp
             #tests/rtpStudy/rtpClient2.cpp
@@ -64,7 +69,11 @@ if(WIN32)
             #tests/rtpStudy/rtpRecvh264.cpp
             #tests/rtpStudy/unPackrtph264.cpp
             #tests/rtpStudy/unPackrtpaac.cpp
-            tests/test.cpp
+            #tests/ffmpeg/h264ToYuv.cpp
+            #tests/sometest.cpp
+            #tests/ffmpeg/decoder.cpp
+            #tests/testArgv.cpp
+            #tests/ffmpeg/combineTwo.cpp
             )
 elseif(UNIX)
     add_executable (${PROJECT_NAME}
