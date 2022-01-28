@@ -35,11 +35,12 @@ AVFrame* VideoReceiver::getData() {
 }
 
 AVPacket* VideoReceiver::getPacket() {
-	if (packet) {
-		return packet;
+	if (playList.empty()) {
+		return 0;
 	}
-	else
-		return nullptr;
+	auto outPacket = playList.front();
+	playList.pop_front();
+	return outPacket;
 }
 
 void VideoReceiver::setData(uint8_t* _data) {
@@ -262,6 +263,8 @@ void VideoReceiver::gnrtPacket(uint8_t* data, size_t len, int64_t timestamp) {
 		inputLen -= ret;
 		if (pkt->size) {
 			av_packet_ref(packet, pkt);
+			if (packet)
+				playList.push_back(packet);
 		}
 	}
 	delete h264Data;

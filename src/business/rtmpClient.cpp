@@ -70,6 +70,7 @@ void RtmpClient::getAudioData() {
 		recvFrameAu = audioReceiver->getData();
 		//TODO 之后将多个videoRecv的data进行拼接后传给videoSender
 		//lk.unlock();
+		aucv->notify_one();
 	}
 }
 
@@ -79,10 +80,11 @@ void RtmpClient::sendAudioData() {
 			std::unique_lock<std::mutex> lk(*mtx);
 			cv->wait(lk);
 		}
+		std::unique_lock<std::mutex> lck(*aumtx);
+		aucv->wait(lck);
 		if (recvFrameAu && recvFrameAu->data[0])
 			send2Rtmp(1);
-		std::this_thread::sleep_for(std::chrono::milliseconds(25));
-		//lk.unlock();
+		//std::this_thread::sleep_for(std::chrono::milliseconds(25));
 	}
 }
 
@@ -93,12 +95,14 @@ void RtmpClient::getVideoData() {
 			std::unique_lock<std::mutex> lk(*mtx);
 			cv->wait(lk);
 		}
+		//std::unique_lock<std::mutex> lck(*vdmtx);
 		videoRecv.processRecvRtpData();
 		//先只用一个AVFrame作为存储，将其传递给videoSender
 		//recvFrameVd = videoRecv.getData();
 		recvPacketVd = videoRecv.getPacket();
 		//TODO 之后将多个videoRecv的data进行拼接后传给videoSender
-		//lk.unlock();
+		vdcv->notify_one();
+		//lck.unlock();
 	}
 }
 
@@ -108,12 +112,14 @@ void RtmpClient::sendVideoData() {
 			std::unique_lock<std::mutex> lk(*mtx);
 			cv->wait(lk);
 		}
+		std::unique_lock<std::mutex> lck(*vdmtx);
+		vdcv->wait(lck);
 		//if (recvFrameVd && recvFrameVd->data[0])
 		//	send2Rtmp(2);
 		if (recvPacketVd)
 			send2Rtmp(2);
-		std::this_thread::sleep_for(std::chrono::milliseconds(35));
-		//lk.unlock();
+		//std::this_thread::sleep_for(std::chrono::milliseconds(35));
+		//lck.unlock();
 	}
 }
 
@@ -140,7 +146,7 @@ void RtmpClient::setStart(bool _start) {
 		//videoSender / audioSender init encoder
 		videoSender = std::make_unique<VideoSender>(mtx, cv, netManager);
 		VideoDefinition vd = VideoDefinition(640, 480);
-		videoSender->initEncoder(vd, 30);
+		videoSender->initEncoder(vd, 25);
 
 		if (netManager->rtmpInit(1) == -1) {
 			return;

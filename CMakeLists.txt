@@ -57,7 +57,7 @@ if(WIN32)
             #tests/mp42rtmp.cpp
             #tests/h264aac2rtmp.cpp
             #tests/h2642rtmp.cpp
-            tests/test.cpp
+            #tests/test.cpp
             #tests/rtpSystem.cpp
             #tests/rtpStudy/rtp.cpp
             #tests/rtpStudy/rtpSendaac.cpp
@@ -73,7 +73,7 @@ if(WIN32)
             #tests/sometest.cpp
             #tests/ffmpeg/decoder.cpp
             #tests/testArgv.cpp
-            #tests/ffmpeg/combineTwo.cpp
+            tests/ffmpeg/combineTwo.cpp
             )
 elseif(UNIX)
     add_executable (${PROJECT_NAME}

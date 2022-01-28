@@ -66,6 +66,8 @@ private:
 
 	AVPacket* pkt = nullptr;
 	AVPacket* packet = nullptr;
+	//”√”⁄¥Ê∑≈avPacket
+	std::list<AVPacket*> playList{};
 	AVFormatContext* formatCtx = nullptr;
 	AVCodecParserContext* parser = NULL;
 	const AVCodec* codec = nullptr;

@@ -66,6 +66,10 @@ private:
 	std::mutex* vdmtx = new std::mutex;
 	std::condition_variable* vdcv = new std::condition_variable;
 
+	//传递给audioReceiver和audioSender的互斥量及锁
+	std::mutex* aumtx = new std::mutex;
+	std::condition_variable* aucv = new std::condition_variable;
+
 	//供rtmpClient使用的互斥量及锁
 	std::mutex* mtx = new std::mutex;
 	std::condition_variable* cv = new std::condition_variable;

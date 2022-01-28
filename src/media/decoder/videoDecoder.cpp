@@ -8,7 +8,6 @@
 #define ALIGN 1
 #endif
 
-//copy from kankan
 VdDecoder::VdDecoder() {
 	// สนำร init
 }

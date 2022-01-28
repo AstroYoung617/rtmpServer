@@ -34,7 +34,7 @@ int main(int argc, char* argv[])
     int ret, got_picture;
     struct SwsContext *img_convert_ctx;
     //输入文件路径
-    char filepath[]="E:/common/video_640.mp4";
+    char filepath[]="E:/common/video1.h264";
 
     int frame_cnt;
 
@@ -86,7 +86,7 @@ int main(int argc, char* argv[])
     avpicture_fill((AVPicture*)pDstFrame, dstbuf, AV_PIX_FMT_YUV420P, FRAMEWITH * 2, FRAMEHEIGTH);
 
     pDstFrame->width = FRAMEWITH * 2;
-    pDstFrame->height = FRAMEHEIGTH;
+    pDstFrame->height = FRAMEHEIGTH * 2;
     pDstFrame->format = AV_PIX_FMT_YUV420P;
 
     //将预先分配的AVFrame图像背景数据设置为黑色背景  
@@ -185,7 +185,7 @@ int main(int argc, char* argv[])
         av_free_packet(packet);
     }
 
-    //fclose(fp_h264);
+    fclose(fp_h264);
     fclose(fp_yuv420);
     sws_freeContext(img_convert_ctx);
 
