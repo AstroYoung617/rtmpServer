@@ -40,6 +40,7 @@ private:
 
 	void getAudioData();
 	void sendAudioData();
+
 	//use to manage the threads 
 	std::unordered_map<string, std::thread> threadMap = {};
 

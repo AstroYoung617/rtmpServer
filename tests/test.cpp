@@ -14,6 +14,7 @@ int main() {
 		getchar();
 		break;
 	}
+	//todo 输入视频端口号，以空格作为间隔，
 	std::cout << "please input the video port(0 to skip):";
 	while (std::cin >> port) {
 		rtmpClient.setPort(2, port);

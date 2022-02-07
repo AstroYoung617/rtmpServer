@@ -1,4 +1,9 @@
-
+/*
+  * Created by Astro
+  * Date : 2022.01.27
+  * Descryption:
+    *		用于将videoReceiver接收到的yuv视频数据编码为h.264，交付给netmanager发送到rtmpURL
+*/
 #pragma once
 #include <stdio.h>
 #include <iostream>
