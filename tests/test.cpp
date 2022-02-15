@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vector>
 #include <other/loggerApi.h>
 #include <business/rtmpClient.h>
 
@@ -6,6 +7,8 @@ int main() {
 	RtmpClient rtmpClient;
 	rtmpClient.printData(1);
 	int port;
+	std::vector<int> vPort;
+	int portv;
 	int start;
 	string url;
 	std::cout << "please input the audio port(0 to skip):";
@@ -17,14 +20,18 @@ int main() {
 	}
 	//todo 输入视频端口号，以空格作为间隔，
 	std::cout << "please input the video port(0 to skip):";
-	while (std::cin >> port) {
-		rtmpClient.setPort(2, port);
-		getchar();
-		break;
+	while (std::cin >> portv) {
+		vPort.push_back(portv);
+		if (std::cin.get() == '\n')
+		  break;
 	}
+	for (auto it : vPort)
+		rtmpClient.setPort(2, it);
 
 	std::cout << "please input the URL:";
 	while (std::cin >> url) {
+		if (url == "1")
+			url = "E:/testflv.flv";
 		rtmpClient.setURL(url);
 		getchar();
 		break;

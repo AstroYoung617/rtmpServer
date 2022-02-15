@@ -1,17 +1,17 @@
 #include <iostream>
-#include <string>
+#include <vector>
 using namespace std;
 
 int main() {
-	int port[5];
-	int i = 0;
-	int* p = (int*)malloc(sizeof(int) * 5);
-	while (cin >> port[i]) {
-		p[i] = port[i];
-		cout << p[i] << " ";
-		i++;
+  vector<int> test;
+  int k;
+	while (cin >> k)
+	{
+		test.push_back(k);
+		if (cin.get() == '\n') break;
 	}
-	cout << sizeof(port) / 4 << endl;
-	
-	return 0;
+
+	for (auto x : test)
+		cout << x << " ";
 }
+           

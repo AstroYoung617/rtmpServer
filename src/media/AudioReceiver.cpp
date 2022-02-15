@@ -235,13 +235,18 @@ void AudioReceiver::process(char* bufIn, int len) {
 	recvFrame = decoder->getFrame();
 	if (recvFrame && recvFrame->data[0]) {
 		len = recvFrame->nb_samples * av_get_bytes_per_sample(static_cast<AVSampleFormat>(recvFrame->format)) * recvFrame->channels;
-		uint8_t* data = new uint8_t[len + 1];
 		fwrite(recvFrame->data[0], 1, len, outFile);
 	}
 	//释放资源
 	memset(recvbuf, 0, 1500);
+	free(adts_buff);
+	free(adts_hdr);
+	//free(rtp_hdr);
+
 	free(rtp_pkt->payload);
 	free(rtp_pkt);
+	free(payload);
+	//delete rtp_hdr;
 	//结束
 	return;
 }

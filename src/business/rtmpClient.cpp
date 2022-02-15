@@ -32,27 +32,22 @@ void RtmpClient::createAudioCh(int _port) {
 	//AudioRecvVct.push_back(*audioReceiver);
 
 	//encoder info
-
 	std::thread get_audio(&RtmpClient::getAudioData, this);
-	std::thread send_audio(&RtmpClient::sendAudioData, this);
 	threadMap["pollAu"] = std::move(get_audio);
-	threadMap["pushAu"] = std::move(send_audio);
 }
 
 void RtmpClient::createVideoCh(int _port) {
 	I_LOG("Create an new VideoChannel port:{}", _port);
-	//auto videoReceiver = new VideoReceiver(_port, vdmtx, vdcv);
-	//VideoRecvVct.push_back(*videoReceiver);
-	videoReceiver = std::make_unique<VideoReceiver>(_port, vdmtx, vdcv);
+	auto videoReceiver = new VideoReceiver(_port, vdmtx, vdcv);
+	VideoRecvVct.push_back(*videoReceiver);
+	//videoReceiver = std::make_unique<VideoReceiver>(_port, vdmtx, vdcv);
 	//auto videoReceiver1 = new VideoReceiver(_port + 2, vdmtx, vdcv);
 	//VideoRecvVct.push_back(*videoReceiver1);
 
 	std::thread get_video(&RtmpClient::getVideoData, this);
-	std::thread send_video(&RtmpClient::sendVideoData, this);
 	//发送黑色的frame测试音频是否有问题
 	//std::thread send_video(&RtmpClient::sendFakeVideoData, this);
-	threadMap["pollVd"] = std::move(get_video);
-	threadMap["pushVd"] = std::move(send_video);
+	threadMap["pollVd" + std::to_string(_port)] = std::move(get_video);
 }
 
 void RtmpClient::getAudioData() {
@@ -98,16 +93,16 @@ void RtmpClient::sendAudioData() {
 }
 
 void RtmpClient::getVideoData() {
-	//auto videoRecv = VideoRecvVct.front();
+	auto videoRecv = VideoRecvVct.front();
 	while (1) {
 		if (!startPush) {
 			std::unique_lock<std::mutex> lk(*mtx);
 			cv->wait(lk);
 		}
-		
-		videoReceiver->processRecvRtpData();
+		videoRecv.processRecvRtpData();
+		//videoReceiver->processRecvRtpData();
 		//先只用一个AVFrame作为存储，将其传递给videoSender
-		recvFrameVd = videoReceiver->getData();
+		recvFrameVd = videoRecv.getData();
 		if (recvFrameVd && recvFrameVd->data[0])
 			recvVdFrameDq.push_back(recvFrameVd);
 		//TODO 之后将多个videoRecv的data进行拼接后传给videoSender
@@ -122,7 +117,7 @@ void RtmpClient::sendVideoData() {
 			std::unique_lock<std::mutex> lk(*mtx);
 			cv->wait(lk);
 		}
-		//std::unique_lock<std::mutex> lck(*vdmtx);
+		std::unique_lock<std::mutex> lck(*vdmtx);
 		//vdcv->wait(lck);
 		//vdcv->wait_for(lck, std::chrono::milliseconds(45));
 		//std::this_thread::sleep_for(std::chrono::milliseconds(20));
@@ -132,7 +127,7 @@ void RtmpClient::sendVideoData() {
 			send2Rtmp(2);
 		//std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
-	 //lck.unlock();
+	  lck.unlock();
 
 	}
 }
@@ -162,7 +157,7 @@ void RtmpClient::sendFakeVideoData() {
 			std::this_thread::sleep_for(std::chrono::milliseconds(videoSender->lastPts - audioSender->lastPts));
 		videoSender->sendFrame(pDstFrame);
 		av_frame_free(&pDstFrame);
-		delete dstbuf;
+		delete[] dstbuf;
 
 	}
 }
@@ -187,11 +182,18 @@ void RtmpClient::setStart(bool _start) {
 		audioSender = std::make_unique<AudioSender>(netManager);
 		audioSender->initAudioEncoder(encoderinfo);
 
+		//create audioSend thread
+		std::thread send_audio(&RtmpClient::sendAudioData, this);
+		threadMap["pushAu"] = std::move(send_audio);
+
 		//videoSender / audioSender init encoder
 		videoSender = std::make_unique<VideoSender>(mtx, cv, netManager);
 		VideoDefinition vd = VideoDefinition(640, 480);
 		videoSender->initEncoder(vd, 19);
 
+		//create videoSend thread
+		std::thread send_video(&RtmpClient::sendVideoData, this);
+		threadMap["pushVd"] = std::move(send_video);
 		if (netManager->rtmpInit(1) == -1) {
 			return;
 		}
@@ -225,7 +227,7 @@ void RtmpClient::setPort(int _type, int _port) {
 void RtmpClient::send2Rtmp(int _type) {
 	if (_type == 1) {
 		int len = recvFrameAu->nb_samples * av_get_bytes_per_sample(static_cast<AVSampleFormat>(recvFrameAu->format)) * recvFrameAu->channels;
-		uint8_t* data = new uint8_t[len + 1];
+		//uint8_t* data = new uint8_t[len + 1];
 		audioSender->send(recvAuFrameDq.front()->data[0], len);
 		recvAuFrameDq.pop_front();
 		//av_frame_unref(recvFrameAu);
