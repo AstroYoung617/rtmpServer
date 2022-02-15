@@ -10,6 +10,7 @@ int main() {
 	string url;
 	std::cout << "please input the audio port(0 to skip):";
 	while (std::cin >> port) {
+		
 		rtmpClient.setPort(1, port);
 		getchar();
 		break;

@@ -146,7 +146,7 @@ private:
 
   Encoder* encoder = nullptr;
   std::unique_ptr<std::mutex> mutex4Encoder = nullptr;
-  VideoDefinition maxDefinition = VideoDefinition(640, 480);
+  VideoDefinition maxDefinition = VideoDefinition(1280, 720);
 
   int count = 0;
   long long startTime;

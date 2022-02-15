@@ -1,6 +1,7 @@
 #include <iostream>
 #include <business/rtmpClient.h>
-
+#define FRAMEWIDTH 640
+#define FRAMEHEIGTH 480
 
 RtmpClient::RtmpClient() {
 	I_LOG("RtmpClient construct success");
@@ -42,7 +43,8 @@ void RtmpClient::createVideoCh(int _port) {
 	I_LOG("Create an new VideoChannel port:{}", _port);
 	auto videoReceiver = new VideoReceiver(_port, vdmtx, vdcv);
 	VideoRecvVct.push_back(*videoReceiver);
-
+	//auto videoReceiver1 = new VideoReceiver(_port + 2, vdmtx, vdcv);
+	//VideoRecvVct.push_back(*videoReceiver1);
 
 	std::thread get_video(&RtmpClient::getVideoData, this);
 	std::thread send_video(&RtmpClient::sendVideoData, this);
@@ -67,6 +69,8 @@ void RtmpClient::getAudioData() {
 		audioReceiver->processRecvRtpData();
 		//先只用一个AVFrame作为存储，将其传递给videoSender
 		recvFrameAu = audioReceiver->getData();
+		if (recvFrameAu && recvFrameAu->data[0])
+			recvAuFrameDq.push_back(recvFrameAu);
 		//TODO 之后将多个videoRecv的data进行拼接后传给videoSender
 		//lk.unlock();
 	}
@@ -78,9 +82,9 @@ void RtmpClient::sendAudioData() {
 			std::unique_lock<std::mutex> lk(*mtx);
 			cv->wait(lk);
 		}
-		if (recvFrameAu && recvFrameAu->data[0])
+		if (recvAuFrameDq.size() && recvAuFrameDq.front()->data[0])
 			send2Rtmp(1);
-		std::this_thread::sleep_for(std::chrono::milliseconds(25));
+		//std::this_thread::sleep_for(std::chrono::milliseconds(20));
 		//lk.unlock();
 	}
 }
@@ -96,6 +100,8 @@ void RtmpClient::getVideoData() {
 		videoRecv.processRecvRtpData();
 		//先只用一个AVFrame作为存储，将其传递给videoSender
 		recvFrameVd = videoRecv.getData();
+		if (recvFrameVd && recvFrameVd->data[0])
+			recvVdFrameDq.push_back(recvFrameVd);
 		//TODO 之后将多个videoRecv的data进行拼接后传给videoSender
 		//lk.unlock();
 		vdcv->notify_one();
@@ -108,13 +114,14 @@ void RtmpClient::sendVideoData() {
 			std::unique_lock<std::mutex> lk(*mtx);
 			cv->wait(lk);
 		}
-		std::unique_lock<std::mutex> lck(*vdmtx);
-		vdcv->wait(lck);
-		if (recvFrameVd && recvFrameVd->data[0])
+		//std::unique_lock<std::mutex> lck(*vdmtx);
+		//vdcv->wait(lck);
+		//vdcv->wait_for(lck, std::chrono::milliseconds(45));
+		if (recvVdFrameDq.size() && recvVdFrameDq.front()->data[0]) 
 			send2Rtmp(2);
-		//std::this_thread::sleep_for(std::chrono::milliseconds(50));
+		//std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
-		lck.unlock();
+	 //lck.unlock();
 
 	}
 }
@@ -141,8 +148,8 @@ void RtmpClient::setStart(bool _start) {
 
 		//videoSender / audioSender init encoder
 		videoSender = std::make_unique<VideoSender>(mtx, cv, netManager);
-		VideoDefinition vd = VideoDefinition(640, 480);
-		videoSender->initEncoder(vd, 20);
+		VideoDefinition vd = VideoDefinition(1280, 720);
+		videoSender->initEncoder(vd, 25);
 
 		if (netManager->rtmpInit(1) == -1) {
 			return;
@@ -178,15 +185,65 @@ void RtmpClient::send2Rtmp(int _type) {
 	if (_type == 1) {
 		int len = recvFrameAu->nb_samples * av_get_bytes_per_sample(static_cast<AVSampleFormat>(recvFrameAu->format)) * recvFrameAu->channels;
 		uint8_t* data = new uint8_t[len + 1];
-		audioSender->send(recvFrameAu->data[0], len);
+		audioSender->send(recvAuFrameDq.front()->data[0], len);
+		recvAuFrameDq.pop_front();
+		//av_frame_unref(recvFrameAu);
+		//audioSender->send(recvFrameAu->data[0], len);
 	}
 	else if (_type == 2) {
-		videoSender->sendFrame(recvFrameVd);
-		av_frame_unref(recvFrameVd);
+		videoSender->sendFrame(recvVdFrameDq.front());
+		recvVdFrameDq.pop_front();
+		//videoSender->sendFrame(combineYUV(recvFrameVd));
+		//av_frame_unref(recvFrameVd);
 	}
 	else if (_type == 3) {
 		;
 	}
+}
+
+AVFrame* RtmpClient::combineYUV(AVFrame* pFrameYUV) {
+	AVFrame* pDstFrame = av_frame_alloc();
+	int nDstSize = avpicture_get_size(AV_PIX_FMT_YUV420P, FRAMEWIDTH * 2, FRAMEHEIGTH);
+	uint8_t* dstbuf = new uint8_t[nDstSize];
+	avpicture_fill((AVPicture*)pDstFrame, dstbuf, AV_PIX_FMT_YUV420P, FRAMEWIDTH * 2, FRAMEHEIGTH);
+
+	pDstFrame->width = FRAMEWIDTH * 2;
+	pDstFrame->height = FRAMEHEIGTH;
+	pDstFrame->format = AV_PIX_FMT_YUV420P;
+
+	//将预先分配的AVFrame图像背景数据设置为黑色背景  
+	memset(pDstFrame->data[0], 0, FRAMEWIDTH * FRAMEHEIGTH * 2);
+	memset(pDstFrame->data[1], 0x80, FRAMEWIDTH * FRAMEHEIGTH / 2);
+	memset(pDstFrame->data[2], 0x80, FRAMEWIDTH * FRAMEHEIGTH / 2);
+	
+	if (pFrameYUV)
+	{
+		int nYIndex = 0;
+		int nUVIndex = 0;
+
+		for (int i = 0; i < FRAMEHEIGTH; i++)
+		{
+			//Y  
+			memcpy(pDstFrame->data[0] + i * FRAMEWIDTH * 2, pFrameYUV->data[0] + nYIndex * FRAMEWIDTH, FRAMEWIDTH);
+			memcpy(pDstFrame->data[0] + FRAMEWIDTH + i * FRAMEWIDTH * 2, pFrameYUV->data[0] + nYIndex * FRAMEWIDTH, FRAMEWIDTH);
+
+			nYIndex++;
+		}
+
+		for (int i = 0; i < FRAMEHEIGTH / 4; i++)
+		{
+			//U
+			memcpy(pDstFrame->data[1] + i * FRAMEWIDTH * 2, pFrameYUV->data[1] + nUVIndex * FRAMEWIDTH, FRAMEWIDTH);
+			memcpy(pDstFrame->data[1] + FRAMEWIDTH + i * FRAMEWIDTH * 2, pFrameYUV->data[1] + nUVIndex * FRAMEWIDTH, FRAMEWIDTH);
+
+			//V  
+			memcpy(pDstFrame->data[2] + i * FRAMEWIDTH * 2, pFrameYUV->data[2] + nUVIndex * FRAMEWIDTH, FRAMEWIDTH);
+			memcpy(pDstFrame->data[2] + FRAMEWIDTH + i * FRAMEWIDTH * 2, pFrameYUV->data[2] + nUVIndex * FRAMEWIDTH, FRAMEWIDTH);
+
+			nUVIndex++;
+		}
+	}
+	return pDstFrame;
 }
 
 void RtmpClient::setURL(string URL) {

@@ -6,7 +6,7 @@ FILE* fileHandle = fopen("./test.yuv", "wb+");
 char* outputfilename = "./receive.264";
 
 VideoReceiver::VideoReceiver(int _port, std::mutex* _mutex, std::condition_variable* _vdcv) {
-	I_LOG("VideoReceiver struct success");
+	I_LOG("VideoReceiver struct success, port = {}", _port);
 	port = _port;
 	mutex = move(_mutex);
 	vdcv = _vdcv;

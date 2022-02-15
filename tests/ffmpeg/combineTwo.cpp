@@ -107,6 +107,7 @@ int main(int argc, char* argv[])
 
     FILE *fp_h264 = fopen("E:/testCom.h264", "wb+");
     FILE *fp_yuv420 = fopen("E:/testCom.yuv", "wb+");
+    //这里的packet就是h264的数据，通过av_decode_video2可以得到pFrame
     while(av_read_frame(pFormatCtx, packet)>=0){
         if(packet->stream_index==videoindex){
                 /*

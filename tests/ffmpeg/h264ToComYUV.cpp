@@ -162,7 +162,7 @@ int main()
 			}
 		}
 		av_free_packet(packet); // free
-		
+
 	}
 
 	//flush decoder

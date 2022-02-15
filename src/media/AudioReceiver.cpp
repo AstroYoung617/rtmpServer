@@ -170,7 +170,7 @@ void AudioReceiver::process(char* bufIn, int len) {
 	RtpHeader* rtp_hdr = NULL;
 	uint8_t* adts_hdr = new uint8_t[7];
 	memcpy(recvbuf, bufIn, len);
-	std::cout << "总长度 = " << len << std::endl;
+	//std::cout << "总长度 = " << len << std::endl;
 
 	rtp_pkt = (RtpPacket*)&recvbuf[0];
 	//分配rtppacket的内存空间
@@ -205,7 +205,7 @@ void AudioReceiver::process(char* bufIn, int len) {
 	rtp_pkt->pt = rtp_hdr->payloadtype;
 	//printf("包号   	: %d \n", rtp_hdr->seq_no);
 	rtp_pkt->seq_no = rtp_hdr->seq_no;
-	printf("时间戳 	: %d\n", rtp_hdr->timestamp);
+	//printf("时间戳 	: %d\n", rtp_hdr->timestamp);
 	rtp_pkt->timestamp = rtp_hdr->timestamp;
 	//printf("帧号   	: %d\n", rtp_hdr->ssrc);
 	rtp_pkt->ssrc = rtp_hdr->ssrc;

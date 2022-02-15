@@ -1,17 +1,17 @@
 #include <iostream>
 #include <string>
-
-void testCopyArray() {
-	uint8_t a[3] = {0x47, 0x48, 0x49};
-	uint8_t b[10] = { 0x47, 0x47, 0x47, 0x47, 0x47, 0x47, 0x47, 0x47, 0x47, 0x47, };
-	memcpy(b, a, sizeof(a));
-	for (int i = 0; i < 10; i++) {
-		std::cout << b[i] << " ";
-	}
-	std::cout << std::endl;
-}
+using namespace std;
 
 int main() {
-	testCopyArray();
+	int port[5];
+	int i = 0;
+	int* p = (int*)malloc(sizeof(int) * 5);
+	while (cin >> port[i]) {
+		p[i] = port[i];
+		cout << p[i] << " ";
+		i++;
+	}
+	cout << sizeof(port) / 4 << endl;
+	
 	return 0;
 }
