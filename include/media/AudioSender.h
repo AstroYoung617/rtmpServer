@@ -20,6 +20,7 @@ public:
   void initAudioEncoder(CoderInfo encoderInfo);
   int send(uint8_t* buf, int len);
   void setStartTime(long long _startTime);
+  int lastPts = 0;
 private:
   //netManager
   std::shared_ptr<NetManager> netManager = nullptr;
@@ -32,7 +33,6 @@ private:
   long long startTime = 0;
   AudioInfo out;
   AudioInfo in;
-  int lastPts = 0;
 };
 
 

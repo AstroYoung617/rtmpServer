@@ -62,9 +62,6 @@ int AudioSender::send(uint8_t* buf, int len) {
   AVPacket* packet = encoder->getPacket();
   if (packet) {
     if (netManager) {
-      long long current = GetTickCount64();
-      //I_LOG("actual duration -------- = {}", current - last);
-      last = current;
       //已经过去的时间
       //long long now = 0;
       int duration = ceil(1024 * 1000 / out.sample_rate);

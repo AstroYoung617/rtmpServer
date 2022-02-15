@@ -3,37 +3,46 @@
 #include <media/VideoSender.h>
 long long last2 = 0;
 
-uint8_t* AVFrame2Img(AVFrame* pFrame) {
+uint8_t* VideoSender::AVFrame2Img(AVFrame* pFrame) {
   int frameHeight = pFrame->height;
   int frameWidth = pFrame->width;
   int channels = 3;
-
+  int size = avpicture_get_size(AV_PIX_FMT_YUV420P, frameHeight, frameWidth);
 
 
   //创建保存yuv数据的buffer
   uint8_t* pDecodedBuffer = (uint8_t*)malloc(
-    frameHeight * frameWidth * sizeof(uint8_t) * channels);
+    size * 3 * sizeof(char));
 
   //从AVFrame中获取yuv420p数据，并保存到buffer
   int i, j, k;
   //拷贝y分量
-  for (i = 0; i < frameHeight; i++) {
-    memcpy(pDecodedBuffer + frameWidth * i,
-      pFrame->data[0] + pFrame->linesize[0] * i,
-      frameWidth);
+  if (pFrame) {
+    //std::unique_lock<std::mutex> encoderLk(*mutex4Encoder);
+    for (i = 0; i < frameHeight; i++) {
+      memcpy(pDecodedBuffer + frameWidth * i,
+        pFrame->data[0] + pFrame->linesize[0] * i,
+        frameWidth);
+    }
+    //拷贝u分量
+    for (j = 0; j < frameHeight / 2; j++) {
+      memcpy(pDecodedBuffer + frameWidth * i + frameWidth / 2 * j,
+        pFrame->data[1] + pFrame->linesize[1] * j,
+        frameWidth / 2);
+    }
+    //拷贝v分量
+    for (k = 0; k < frameHeight / 2; k++) {
+      memcpy(pDecodedBuffer + frameWidth * i + frameWidth / 2 * j + frameWidth / 2 * k,
+        pFrame->data[2] + pFrame->linesize[2] * k,
+        frameWidth / 2);
+    }
+    //encoderLk.unlock();
   }
-  //拷贝u分量
-  for (j = 0; j < frameHeight / 2; j++) {
-    memcpy(pDecodedBuffer + frameWidth * i + frameWidth / 2 * j,
-      pFrame->data[1] + pFrame->linesize[1] * j,
-      frameWidth / 2);
+  else {
+    free(pDecodedBuffer);
+    pDecodedBuffer = nullptr;
   }
-  //拷贝v分量
-  for (k = 0; k < frameHeight / 2; k++) {
-    memcpy(pDecodedBuffer + frameWidth * i + frameWidth / 2 * j + frameWidth / 2 * k,
-      pFrame->data[2] + pFrame->linesize[2] * k,
-      frameWidth / 2);
-  }
+ 
   return pDecodedBuffer;
 }
 
@@ -91,6 +100,32 @@ int VideoSender::stop() {
   return 0;
 }
 
+int VideoSender::send(uint8_t* data, int width, int height, AVPixelFormat fmt) {
+  std::unique_lock<std::mutex> encoderLk(*mutex4Encoder);
+  encoder->pushWatchFmt(data, -1, width, height, (AVPixelFormat)fmt);
+  AVPacket* packet = encoder->pollAVPacket();
+  if (packet) {
+    if (netManager) {
+      packet->duration = ceil(1000 / frameRate);
+      packet->pts = count * packet->duration;
+      packet->dts = packet->pts;
+      I_LOG("audio packet index {} pts {} dts {} dura {}", count, packet->pts, packet->dts, packet->duration);
+
+      lastPts = packet->pts;
+      lastPts = packet->pts;
+      count++;
+      if (count > 0) {
+        I_LOG("video packet index {} pts {} dura {} frameRate {} expectPts {} deltaPts {}", count, packet->pts, packet->duration, count * 1000 / packet->pts, 50 * count, 50 * count - packet->pts);
+      }
+      packet->stream_index = 0;
+      int ret = netManager->sendRTMPData(packet);
+      encoderLk.unlock();
+      return ret;
+    }
+  }
+  encoderLk.unlock();
+  return -1;
+}
 
 int VideoSender::sendFrame(AVFrame* frame) {
   std::unique_lock<std::mutex> encoderLk(*mutex4Encoder);
@@ -103,6 +138,7 @@ int VideoSender::sendFrame(AVFrame* frame) {
     count++;
     I_LOG("video packet index {} pts {} dts {} dura {}", count, packet->pts, packet->dts, packet->duration);
     packet->stream_index = 0;
+    lastPts = packet->pts;
     if (netManager) {
       //long long now = GetTickCount64();
       //if (packet->pts > now)
@@ -113,11 +149,13 @@ int VideoSender::sendFrame(AVFrame* frame) {
       encoderLk.unlock();
       //fix memory leak, 这种内存泄漏的地方尤其要注意，是因为使用的函数直接返回数组，那么就应该在不再使用的时候进行释放。
       delete img;
+      img = nullptr;
       return ret;
     }
   }
   encoderLk.unlock();
   delete img;
+  img = nullptr;
   av_frame_free(&frame);
   return -1;
 }

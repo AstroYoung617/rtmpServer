@@ -226,7 +226,7 @@ void AudioReceiver::process(char* bufIn, int len) {
 	uint8_t* adts_buff;
 	//如果是aac格式
 	frame_size = 0;
-	adts_buff = new uint8_t[3000];
+	adts_buff = new uint8_t[4096];
 	std::pair<int&, uint8_t*> demuxAudioFrame(frame_size, adts_buff);
 	//解封装
 	decoder->demux(payload, demuxAudioFrame);

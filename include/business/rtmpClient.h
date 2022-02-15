@@ -43,6 +43,8 @@ private:
 	void getAudioData();
 	void sendAudioData();
 
+	void sendFakeVideoData();
+
 	//use to test yuv combine
 	AVFrame* combineYUV(AVFrame* pFrame);
 
@@ -57,6 +59,7 @@ private:
 	*/
 	//多个audioReceiver遇到一点问题，先写成unique
 	std::unique_ptr<AudioReceiver> audioReceiver = nullptr;
+	std::unique_ptr<VideoReceiver> videoReceiver = nullptr;
 
 	std::unique_ptr<VideoSender> videoSender = nullptr;
 	std::unique_ptr<AudioSender> audioSender = nullptr;
@@ -74,12 +77,15 @@ private:
 	std::mutex* vdmtx = new std::mutex;
 	std::condition_variable* vdcv = new std::condition_variable;
 
+	std::mutex* aumtx = new std::mutex;
+	std::condition_variable* aucv = new std::condition_variable;
+
 	//供rtmpClient使用的互斥量及锁
 	std::mutex* mtx = new std::mutex;
 	std::condition_variable* cv = new std::condition_variable;
 
 	//rtmp 
 	string rtmpURL = "";
-	//string rtmpURL = "rtmp://live-push.bilivideo.com/live-bvc/?streamname=live_98579344_16311849&key=41a6b8b86a64eaeccb3efe3679940c43&schedule=rtmp&pflag=1";
+	//string rtmpURL = "rtmp://live-push.bilivideo.com/live-bvc/?streamname=live_98579344_16311849&key=db3d9db495ef7a7852dcc1544a267ba7&schedule=rtmp&pflag=1";
 	//string rtmpURL = "E:/testrtmp.flv";
 };

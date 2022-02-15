@@ -41,13 +41,16 @@ void RtmpClient::createAudioCh(int _port) {
 
 void RtmpClient::createVideoCh(int _port) {
 	I_LOG("Create an new VideoChannel port:{}", _port);
-	auto videoReceiver = new VideoReceiver(_port, vdmtx, vdcv);
-	VideoRecvVct.push_back(*videoReceiver);
+	//auto videoReceiver = new VideoReceiver(_port, vdmtx, vdcv);
+	//VideoRecvVct.push_back(*videoReceiver);
+	videoReceiver = std::make_unique<VideoReceiver>(_port, vdmtx, vdcv);
 	//auto videoReceiver1 = new VideoReceiver(_port + 2, vdmtx, vdcv);
 	//VideoRecvVct.push_back(*videoReceiver1);
 
 	std::thread get_video(&RtmpClient::getVideoData, this);
 	std::thread send_video(&RtmpClient::sendVideoData, this);
+	//发送黑色的frame测试音频是否有问题
+	//std::thread send_video(&RtmpClient::sendFakeVideoData, this);
 	threadMap["pollVd"] = std::move(get_video);
 	threadMap["pushVd"] = std::move(send_video);
 }
@@ -73,6 +76,7 @@ void RtmpClient::getAudioData() {
 			recvAuFrameDq.push_back(recvFrameAu);
 		//TODO 之后将多个videoRecv的data进行拼接后传给videoSender
 		//lk.unlock();
+		aucv->notify_one();
 	}
 }
 
@@ -82,24 +86,28 @@ void RtmpClient::sendAudioData() {
 			std::unique_lock<std::mutex> lk(*mtx);
 			cv->wait(lk);
 		}
+		std::unique_lock<std::mutex> lck(*aumtx);
+		//aucv->wait(lck);
+		//if (audioSender->lastPts > videoSender->lastPts)
+		//	std::this_thread::sleep_for(std::chrono::milliseconds(audioSender->lastPts - videoSender->lastPts));
 		if (recvAuFrameDq.size() && recvAuFrameDq.front()->data[0])
 			send2Rtmp(1);
 		//std::this_thread::sleep_for(std::chrono::milliseconds(20));
-		//lk.unlock();
+		lck.unlock();
 	}
 }
 
 void RtmpClient::getVideoData() {
-	auto videoRecv = VideoRecvVct.front();
+	//auto videoRecv = VideoRecvVct.front();
 	while (1) {
 		if (!startPush) {
 			std::unique_lock<std::mutex> lk(*mtx);
 			cv->wait(lk);
 		}
 		
-		videoRecv.processRecvRtpData();
+		videoReceiver->processRecvRtpData();
 		//先只用一个AVFrame作为存储，将其传递给videoSender
-		recvFrameVd = videoRecv.getData();
+		recvFrameVd = videoReceiver->getData();
 		if (recvFrameVd && recvFrameVd->data[0])
 			recvVdFrameDq.push_back(recvFrameVd);
 		//TODO 之后将多个videoRecv的data进行拼接后传给videoSender
@@ -117,11 +125,44 @@ void RtmpClient::sendVideoData() {
 		//std::unique_lock<std::mutex> lck(*vdmtx);
 		//vdcv->wait(lck);
 		//vdcv->wait_for(lck, std::chrono::milliseconds(45));
+		//std::this_thread::sleep_for(std::chrono::milliseconds(20));
+		if (videoSender->lastPts > audioSender->lastPts)
+			std::this_thread::sleep_for(std::chrono::milliseconds(videoSender->lastPts - audioSender->lastPts));
 		if (recvVdFrameDq.size() && recvVdFrameDq.front()->data[0]) 
 			send2Rtmp(2);
 		//std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
 	 //lck.unlock();
+
+	}
+}
+
+void RtmpClient::sendFakeVideoData() {
+	while (1) {
+		if (!startPush) {
+			std::unique_lock<std::mutex> lk(*mtx);
+			cv->wait(lk);
+		}
+		//vdcv->wait_for(lck, std::chrono::milliseconds(45));
+		std::this_thread::sleep_for(std::chrono::milliseconds(20));
+		AVFrame* pDstFrame = av_frame_alloc();
+		int nDstSize = avpicture_get_size(AV_PIX_FMT_YUV420P, FRAMEWIDTH, FRAMEHEIGTH);
+		uint8_t* dstbuf = new uint8_t[nDstSize];
+		avpicture_fill((AVPicture*)pDstFrame, dstbuf, AV_PIX_FMT_YUV420P, FRAMEWIDTH, FRAMEHEIGTH);
+
+		pDstFrame->width = FRAMEWIDTH;
+		pDstFrame->height = FRAMEHEIGTH;
+		pDstFrame->format = AV_PIX_FMT_YUV420P;
+
+		//将预先分配的AVFrame图像背景数据设置为黑色背景  
+		memset(pDstFrame->data[0], 0, FRAMEWIDTH * FRAMEHEIGTH);
+		memset(pDstFrame->data[1], 0x80, FRAMEWIDTH * FRAMEHEIGTH / 4);
+		memset(pDstFrame->data[2], 0x80, FRAMEWIDTH * FRAMEHEIGTH / 4);
+		if (videoSender->lastPts > audioSender->lastPts)
+			std::this_thread::sleep_for(std::chrono::milliseconds(videoSender->lastPts - audioSender->lastPts));
+		videoSender->sendFrame(pDstFrame);
+		av_frame_free(&pDstFrame);
+		delete dstbuf;
 
 	}
 }
@@ -137,7 +178,7 @@ void RtmpClient::setStart(bool _start) {
 		encoderinfo.inFormate = MyAVSampleFormat::AV_SAMPLE_FMT_S16;
 
 		encoderinfo.outChannels = 1;
-		encoderinfo.outSampleRate = 44100;
+		encoderinfo.outSampleRate = 32000;
 		encoderinfo.outFormate = MyAVSampleFormat::AV_SAMPLE_FMT_FLTP;
 		encoderinfo.cdtype = CodecType::AAC;
 		encoderinfo.muxType = MuxType::ADTS;
@@ -148,8 +189,8 @@ void RtmpClient::setStart(bool _start) {
 
 		//videoSender / audioSender init encoder
 		videoSender = std::make_unique<VideoSender>(mtx, cv, netManager);
-		VideoDefinition vd = VideoDefinition(1280, 720);
-		videoSender->initEncoder(vd, 25);
+		VideoDefinition vd = VideoDefinition(640, 480);
+		videoSender->initEncoder(vd, 19);
 
 		if (netManager->rtmpInit(1) == -1) {
 			return;
