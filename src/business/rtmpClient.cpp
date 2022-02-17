@@ -114,14 +114,14 @@ void RtmpClient::sendVideoData() {
 			std::unique_lock<std::mutex> lk(*mtx);
 			cv->wait(lk);
 		}
-		//std::unique_lock<std::mutex> lck(*vdmtx);
+		std::unique_lock<std::mutex> lck(*vdmtx);
 		//vdcv->wait(lck);
 		//vdcv->wait_for(lck, std::chrono::milliseconds(45));
 		if (recvVdFrameDq.size() && recvVdFrameDq.front()->data[0]) 
 			send2Rtmp(2);
 		//std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
-	 //lck.unlock();
+	 lck.unlock();
 
 	}
 }
@@ -137,7 +137,7 @@ void RtmpClient::setStart(bool _start) {
 		encoderinfo.inFormate = MyAVSampleFormat::AV_SAMPLE_FMT_S16;
 
 		encoderinfo.outChannels = 1;
-		encoderinfo.outSampleRate = 44100;
+		encoderinfo.outSampleRate = 32000;
 		encoderinfo.outFormate = MyAVSampleFormat::AV_SAMPLE_FMT_FLTP;
 		encoderinfo.cdtype = CodecType::AAC;
 		encoderinfo.muxType = MuxType::ADTS;
@@ -149,7 +149,7 @@ void RtmpClient::setStart(bool _start) {
 		//videoSender / audioSender init encoder
 		videoSender = std::make_unique<VideoSender>(mtx, cv, netManager);
 		VideoDefinition vd = VideoDefinition(1280, 720);
-		videoSender->initEncoder(vd, 25);
+		videoSender->initEncoder(vd, 19);
 
 		if (netManager->rtmpInit(1) == -1) {
 			return;
