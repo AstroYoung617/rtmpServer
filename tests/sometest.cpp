@@ -1,17 +1,23 @@
 #include <iostream>
+#include <thread>
 #include <vector>
+#include <functional>
 using namespace std;
 
-int main() {
-  vector<int> test;
-  int k;
-	while (cin >> k)
-	{
-		test.push_back(k);
-		if (cin.get() == '\n') break;
-	}
+struct video {
+	video(){	}
 
-	for (auto x : test)
-		cout << x << " ";
+	void count(int n) {
+		for(int i = 0; i < 5; i++){
+			cout << n << endl;
+		}
+	}
+};
+
+int main() {
+	video *test = new video();
+	int n = 5;
+	thread testvideo(&video::count, test, n);
+	testvideo.join();
 }
            

@@ -135,49 +135,52 @@ int main(int argc, char* argv[])
                 {
                     fwrite(pFrameYUV->data[0] + i*FRAMEWITH, 1, FRAMEWITH, fp_yuv420);    //Y   
                     fwrite(pFrameYUV->data[0] + i*FRAMEWITH, 1, FRAMEWITH, fp_yuv420);    //Y   
+                    fwrite(pFrameYUV->data[0] + i*FRAMEWITH, 1, FRAMEWITH, fp_yuv420);    //Y   
                 }
                 for (int i = 0; i < FRAMEHEIGTH / 4; i++)
                 {
                     fwrite(pFrameYUV->data[1] + i*FRAMEWITH, 1, FRAMEWITH, fp_yuv420);  //U    
+                    fwrite(pFrameYUV->data[1] + i*FRAMEWITH, 1, FRAMEWITH, fp_yuv420);  //U  
                     fwrite(pFrameYUV->data[1] + i*FRAMEWITH, 1, FRAMEWITH, fp_yuv420);  //U  
                 }
                 for (int i = 0; i < FRAMEHEIGTH / 4; i++)
                 {
                     fwrite(pFrameYUV->data[2] + i*FRAMEWITH, 1, FRAMEWITH, fp_yuv420);  //V  
                     fwrite(pFrameYUV->data[2] + i*FRAMEWITH, 1, FRAMEWITH, fp_yuv420);  //V  
+                    fwrite(pFrameYUV->data[2] + i*FRAMEWITH, 1, FRAMEWITH, fp_yuv420);  //V  
                 }
                 
 
-                if (pFrameYUV)
-                {
-                    int nYIndex = 0;
-                    int nUVIndex = 0;
+                //if (pFrameYUV)
+                //{
+                //    int nYIndex = 0;
+                //    int nUVIndex = 0;
 
-                    for (int i = 0; i < FRAMEHEIGTH; i++)
-                    {
-                        //Y  
-                        memcpy(pDstFrame->data[0] + i*FRAMEWITH * 2, pFrameYUV->data[0] + nYIndex*FRAMEWITH, FRAMEWITH);
-                        memcpy(pDstFrame->data[0] + FRAMEWITH + i*FRAMEWITH * 2, pFrameYUV->data[0] + nYIndex*FRAMEWITH, FRAMEWITH);
+                //    for (int i = 0; i < FRAMEHEIGTH; i++)
+                //    {
+                //        //Y  
+                //        memcpy(pDstFrame->data[0] + i*FRAMEWITH * 2, pFrameYUV->data[0] + nYIndex*FRAMEWITH, FRAMEWITH);
+                //        memcpy(pDstFrame->data[0] + FRAMEWITH + i*FRAMEWITH * 2, pFrameYUV->data[0] + nYIndex*FRAMEWITH, FRAMEWITH);
 
-                        nYIndex++;
-                    }
+                //        nYIndex++;
+                //    }
 
-                    for (int i = 0; i < FRAMEHEIGTH / 4; i++)
-                    {
-                        //U
-                        memcpy(pDstFrame->data[1] + i*FRAMEWITH * 2, pFrameYUV->data[1] + nUVIndex*FRAMEWITH, FRAMEWITH);
-                        memcpy(pDstFrame->data[1] + FRAMEWITH + i*FRAMEWITH * 2, pFrameYUV->data[1] + nUVIndex*FRAMEWITH, FRAMEWITH);
+                //    for (int i = 0; i < FRAMEHEIGTH / 4; i++)
+                //    {
+                //        //U
+                //        memcpy(pDstFrame->data[1] + i*FRAMEWITH * 2, pFrameYUV->data[1] + nUVIndex*FRAMEWITH, FRAMEWITH);
+                //        memcpy(pDstFrame->data[1] + FRAMEWITH + i*FRAMEWITH * 2, pFrameYUV->data[1] + nUVIndex*FRAMEWITH, FRAMEWITH);
 
-                        //V  
-                        memcpy(pDstFrame->data[2] + i*FRAMEWITH * 2, pFrameYUV->data[2] + nUVIndex*FRAMEWITH, FRAMEWITH);
-                        memcpy(pDstFrame->data[2] + FRAMEWITH + i*FRAMEWITH * 2, pFrameYUV->data[2] + nUVIndex*FRAMEWITH, FRAMEWITH);
+                //        //V  
+                //        memcpy(pDstFrame->data[2] + i*FRAMEWITH * 2, pFrameYUV->data[2] + nUVIndex*FRAMEWITH, FRAMEWITH);
+                //        memcpy(pDstFrame->data[2] + FRAMEWITH + i*FRAMEWITH * 2, pFrameYUV->data[2] + nUVIndex*FRAMEWITH, FRAMEWITH);
 
-                        nUVIndex++;
-                    }
-                }
-                fwrite(pDstFrame->data[0], 1, FRAMEWITH*FRAMEHEIGTH * 2, fp_yuv420);
-                fwrite(pDstFrame->data[1], 1, FRAMEWITH*FRAMEHEIGTH / 2, fp_yuv420);
-                fwrite(pDstFrame->data[2], 1, FRAMEWITH*FRAMEHEIGTH / 2, fp_yuv420);
+                //        nUVIndex++;
+                //    }
+                //}
+                //fwrite(pDstFrame->data[0], 1, FRAMEWITH*FRAMEHEIGTH * 2, fp_yuv420);
+                //fwrite(pDstFrame->data[1], 1, FRAMEWITH*FRAMEHEIGTH / 2, fp_yuv420);
+                //fwrite(pDstFrame->data[2], 1, FRAMEWITH*FRAMEHEIGTH / 2, fp_yuv420);
 
                 frame_cnt++;
             }

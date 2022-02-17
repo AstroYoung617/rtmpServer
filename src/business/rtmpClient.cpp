@@ -38,16 +38,28 @@ void RtmpClient::createAudioCh(int _port) {
 
 void RtmpClient::createVideoCh(int _port) {
 	I_LOG("Create an new VideoChannel port:{}", _port);
-	auto videoReceiver = new VideoReceiver(_port, vdmtx, vdcv);
-	VideoRecvVct.push_back(*videoReceiver);
-	//videoReceiver = std::make_unique<VideoReceiver>(_port, vdmtx, vdcv);
-	//auto videoReceiver1 = new VideoReceiver(_port + 2, vdmtx, vdcv);
-	//VideoRecvVct.push_back(*videoReceiver1);
-
-	std::thread get_video(&RtmpClient::getVideoData, this);
-	//发送黑色的frame测试音频是否有问题
-	//std::thread send_video(&RtmpClient::sendFakeVideoData, this);
-	threadMap["pollVd" + std::to_string(_port)] = std::move(get_video);
+	if (!videoReceiver) {
+		videoReceiver = std::make_shared<VideoReceiver>(_port, vdmtx, vdcv);
+		VideoRecvVct.push_back(*videoReceiver);
+		VideoRecvMap.insert(std::make_pair(_port, VideoRecvVct));
+		auto vdDq = std::deque<AVFrame*>();
+		recvVdFrameMap.insert({ _port, vdDq });
+		std::thread get_video(&RtmpClient::getVideoData, this, _port);
+		//发送黑色的frame测试音频是否有问题
+		//std::thread send_video(&RtmpClient::sendFakeVideoData, this);
+		threadMap["pollVd" + std::to_string(_port)] = std::move(get_video);
+	}
+	else {
+		videoReceiver1 = std::make_shared<VideoReceiver>(_port, vdmtx, vdcv);
+		VideoRecvVct1.push_back(*videoReceiver);
+		VideoRecvMap.insert(std::make_pair(_port, VideoRecvVct1));
+		auto vdDq = std::deque<AVFrame*>();
+		recvVdFrameMap.insert({ _port, vdDq });
+		std::thread get_video1(&RtmpClient::getVideoData, this, _port);
+		////发送黑色的frame测试音频是否有问题
+		////std::thread send_video(&RtmpClient::sendFakeVideoData, this);
+		threadMap["pollVd" + std::to_string(_port)] = std::move(get_video1);
+	}
 }
 
 void RtmpClient::getAudioData() {
@@ -91,23 +103,24 @@ void RtmpClient::sendAudioData() {
 		lck.unlock();
 	}
 }
-
-void RtmpClient::getVideoData() {
-	auto videoRecv = VideoRecvVct.front();
+ void RtmpClient::getVideoData(int _port) {
+	//auto videoRecv = VideoRecvMap.find(_port)->second.front();
 	while (1) {
 		if (!startPush) {
 			std::unique_lock<std::mutex> lk(*mtx);
 			cv->wait(lk);
 		}
-		videoRecv.processRecvRtpData();
+		//std::unique_lock<std::mutex> lk(*vdmtx);
+		VideoRecvMap.find(_port)->second.front().processRecvRtpData();
 		//videoReceiver->processRecvRtpData();
-		//先只用一个AVFrame作为存储，将其传递给videoSender
-		recvFrameVd = videoRecv.getData();
+		auto recvFrameVd = VideoRecvMap.find(_port)->second.front().getData();
+		//auto recvFrameVd = videoReceiver->getData();
 		if (recvFrameVd && recvFrameVd->data[0])
-			recvVdFrameDq.push_back(recvFrameVd);
+			recvVdFrameMap.find(_port)->second.push_back(recvFrameVd);
+			//recvVdFrameDq.push_back(recvFrameVd);
 		//TODO 之后将多个videoRecv的data进行拼接后传给videoSender
 		//lk.unlock();
-		vdcv->notify_one();
+		//vdcv->notify_one();
 	}
 }
 
@@ -123,12 +136,11 @@ void RtmpClient::sendVideoData() {
 		//std::this_thread::sleep_for(std::chrono::milliseconds(20));
 		if (videoSender->lastPts > audioSender->lastPts)
 			std::this_thread::sleep_for(std::chrono::milliseconds(videoSender->lastPts - audioSender->lastPts));
-		if (recvVdFrameDq.size() && recvVdFrameDq.front()->data[0]) 
+		//if (recvVdFrameDq.size() && recvVdFrameDq.front()->data[0]) 
+		if (recvVdFrameMap.find(2222)->second.size()&& recvVdFrameMap.find(2222)->second.front()->data[0])
 			send2Rtmp(2);
 		//std::this_thread::sleep_for(std::chrono::milliseconds(10));
-
 	  lck.unlock();
-
 	}
 }
 
@@ -188,7 +200,7 @@ void RtmpClient::setStart(bool _start) {
 
 		//videoSender / audioSender init encoder
 		videoSender = std::make_unique<VideoSender>(mtx, cv, netManager);
-		VideoDefinition vd = VideoDefinition(640, 480);
+		VideoDefinition vd = VideoDefinition(1280, 720);
 		videoSender->initEncoder(vd, 19);
 
 		//create videoSend thread
@@ -234,8 +246,9 @@ void RtmpClient::send2Rtmp(int _type) {
 		//audioSender->send(recvFrameAu->data[0], len);
 	}
 	else if (_type == 2) {
-		videoSender->sendFrame(recvVdFrameDq.front());
-		recvVdFrameDq.pop_front();
+		videoSender->sendFrame(recvVdFrameMap.find(2222)->second.front());
+		//videoSender->sendFrame(recvVdFrameDq.front());
+		//recvVdFrameDq.pop_front();
 		//videoSender->sendFrame(combineYUV(recvFrameVd));
 		//av_frame_unref(recvFrameVd);
 	}

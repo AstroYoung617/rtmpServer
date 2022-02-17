@@ -74,7 +74,7 @@ void VideoSender::initEncoder(const VideoDefinition& captureSize, int frameRate)
   encoder->setIsCrf(false);
   encoder->setProfile("high");
   encoder->setMaxBFrame(0);
-  encoder->setGopSize(30);
+  encoder->setGopSize(20);
   encoder->setPixFmt(AV_PIX_FMT_BGRA);
   this->frameRate = frameRate;
   encoder->setFrameRate(frameRate);

@@ -11,6 +11,7 @@
 #include <string>
 #include <memory>
 #include <deque>
+#include <map>
 #include <media/AudioReceiver.h>
 #include <media/VideoReceiver.h>
 #include <media/VideoSender.h>
@@ -32,12 +33,14 @@ private:
 	void createAudioCh(int _port);
 	void createVideoCh(int _port);
 	std::vector<AudioReceiver> AudioRecvVct;
-	std::vector<VideoReceiver> VideoRecvVct;
+	std::deque<VideoReceiver> VideoRecvVct;
+	std::deque<VideoReceiver> VideoRecvVct1;
+	std::map<int, deque<VideoReceiver>> VideoRecvMap;
 	
 	void initRtmp();
 
 	//thread use to get(rtp)&send(rtmp)
-	void getVideoData();
+	void getVideoData(int _port);
 	void sendVideoData();
 
 	void getAudioData();
@@ -59,7 +62,8 @@ private:
 	*/
 	//多个audioReceiver遇到一点问题，先写成unique
 	std::unique_ptr<AudioReceiver> audioReceiver = nullptr;
-	std::unique_ptr<VideoReceiver> videoReceiver = nullptr;
+	std::shared_ptr<VideoReceiver> videoReceiver = nullptr;
+	std::shared_ptr<VideoReceiver> videoReceiver1 = nullptr;
 
 	std::unique_ptr<VideoSender> videoSender = nullptr;
 	std::unique_ptr<AudioSender> audioSender = nullptr;
@@ -67,8 +71,10 @@ private:
 
 
 
-	AVFrame* recvFrameVd = nullptr;
+	//AVFrame* recvFrameVd = nullptr;
 	AVFrame* recvFrameAu = nullptr;
+
+	std::map<int, deque<AVFrame*>> recvVdFrameMap;  //使用端口和队列相对应的方式来存储接收到的帧
 
 	deque<AVFrame*> recvVdFrameDq;
 	deque<AVFrame*> recvAuFrameDq;
