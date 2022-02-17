@@ -148,7 +148,7 @@ void RtmpClient::setStart(bool _start) {
 
 		//videoSender / audioSender init encoder
 		videoSender = std::make_unique<VideoSender>(mtx, cv, netManager);
-		VideoDefinition vd = VideoDefinition(1280, 720);
+		VideoDefinition vd = VideoDefinition(640, 480);
 		videoSender->initEncoder(vd, 19);
 
 		if (netManager->rtmpInit(1) == -1) {
@@ -184,7 +184,6 @@ void RtmpClient::setPort(int _type, int _port) {
 void RtmpClient::send2Rtmp(int _type) {
 	if (_type == 1) {
 		int len = recvFrameAu->nb_samples * av_get_bytes_per_sample(static_cast<AVSampleFormat>(recvFrameAu->format)) * recvFrameAu->channels;
-		uint8_t* data = new uint8_t[len + 1];
 		audioSender->send(recvAuFrameDq.front()->data[0], len);
 		recvAuFrameDq.pop_front();
 		//av_frame_unref(recvFrameAu);

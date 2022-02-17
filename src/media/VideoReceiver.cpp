@@ -72,6 +72,11 @@ void VideoReceiver::initSocket() {
 
 	sin_size = sizeof(struct sockaddr_in);
 	printf("waiting for client connection...\n");
+	if ((rtp_hdr = (RtpHeader*)malloc(sizeof(RtpHeader))) == NULL)
+	{
+		printf("RTP_FIXED_HEADER MEMORY ERROR\n");
+	}
+
 }
 
 void VideoReceiver::closeSocket() {
@@ -135,7 +140,6 @@ void VideoReceiver::decode(uint8_t* data, size_t len, int64_t ts) {
 void VideoReceiver::process(char* bufIn, int len) {
 	unsigned char recvbuf[1500];
 	RtpPacket* p = NULL;
-	RtpHeader* rtp_hdr = NULL;
 
 	memcpy(recvbuf, bufIn, len);          //复制rtp包 
 	
@@ -148,11 +152,6 @@ void VideoReceiver::process(char* bufIn, int len) {
 	{
 		printf("RTPpacket_t payload MMEMORY ERROR\n");
 	}
-
-	if ((rtp_hdr = (RtpHeader*)malloc(sizeof(RtpHeader))) == NULL)
-	{
-		printf("RTP_FIXED_HEADER MEMORY ERROR\n");
-	}
 	//将主机数转换成网络字节序
 	rtp_hdr = (RtpHeader*)&recvbuf[0];
 	rtp_hdr->seq_no = htons(rtp_hdr->seq_no);
@@ -163,7 +162,6 @@ void VideoReceiver::process(char* bufIn, int len) {
 	memcpy(p->payload, &recvbuf[12], len - 12);
 	p->paylen = len - 12;
 	decode(p->payload, p->paylen, p->timestamp);
-	memset(recvbuf, 0, 1500);
 	free(p->payload);
 	free(p);
 	return;

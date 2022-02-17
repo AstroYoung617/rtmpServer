@@ -64,5 +64,5 @@ private:
 	struct sockaddr_in server_sockaddr, client_sockaddr;
 	AVFrame* frame;
 	int	receive_bytes = 0;
-
+	RtpHeader* rtp_hdr = NULL;
 };

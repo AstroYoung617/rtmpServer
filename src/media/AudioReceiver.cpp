@@ -83,6 +83,11 @@ void AudioReceiver::initSocket() {
 	//地址长度
 	sin_size = sizeof(struct sockaddr_in);
 	printf("waiting for client connection...\n");
+	//这个rtp_hdr用free释放会报错
+	if ((rtp_hdr = (RtpHeader*)malloc(sizeof(RtpHeader))) == NULL)
+	{
+		printf("RTP_FIXED_HEADER MEMORY ERROR\n");
+	}
 	return;
 }
 
@@ -167,7 +172,6 @@ inline void AudioReceiver::writeAdtsHeaders(uint8_t* header, int dataLength, int
 void AudioReceiver::process(char* bufIn, int len) {
 	unsigned char recvbuf[1500];
 	RtpPacket* rtp_pkt = NULL;
-	RtpHeader* rtp_hdr = NULL;
 	uint8_t* adts_hdr = new uint8_t[7];
 	memcpy(recvbuf, bufIn, len);
 	//std::cout << "总长度 = " << len << std::endl;
@@ -181,11 +185,6 @@ void AudioReceiver::process(char* bufIn, int len) {
 	if ((rtp_pkt->payload = (unsigned char*)malloc(MAXDATASIZE)) == NULL)
 	{
 		printf("RTPpacket_t payload MEMORY ERROR\n");
-	}
-
-	if ((rtp_hdr = (RtpHeader*)malloc(sizeof(RtpHeader))) == NULL)
-	{
-		printf("RTP_FIXED_HEADER MEMORY ERROR\n");
 	}
 	////将主机数转换成网络字节序
 	rtp_hdr = (RtpHeader*)&recvbuf[0];
@@ -226,7 +225,7 @@ void AudioReceiver::process(char* bufIn, int len) {
 	uint8_t* adts_buff;
 	//如果是aac格式
 	frame_size = 0;
-	adts_buff = new uint8_t[3000];
+	adts_buff = new uint8_t[4096];
 	std::pair<int&, uint8_t*> demuxAudioFrame(frame_size, adts_buff);
 	//解封装
 	decoder->demux(payload, demuxAudioFrame);
@@ -235,13 +234,17 @@ void AudioReceiver::process(char* bufIn, int len) {
 	recvFrame = decoder->getFrame();
 	if (recvFrame && recvFrame->data[0]) {
 		len = recvFrame->nb_samples * av_get_bytes_per_sample(static_cast<AVSampleFormat>(recvFrame->format)) * recvFrame->channels;
-		uint8_t* data = new uint8_t[len + 1];
 		fwrite(recvFrame->data[0], 1, len, outFile);
 	}
 	//释放资源
 	memset(recvbuf, 0, 1500);
+	free(adts_buff);
+	free(adts_hdr);
 	free(rtp_pkt->payload);
 	free(rtp_pkt);
+	delete[] payload;
+	std::cout << "    " + sizeof(rtp_hdr) << std::endl;
+	//free(rtp_hdr);
 	//结束
 	return;
 }
