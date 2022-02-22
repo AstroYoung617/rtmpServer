@@ -124,8 +124,7 @@ int main(int argc, char* argv[])
 
 
     pDstFrame = av_frame_alloc();
-    int nDstSize = avpicture_get_size(AV_PIX_FMT_YUV420P, FRAMEWITH * 2, FRAMEHEIGTH);
-    uint8_t* dstbuf = new uint8_t[nDstSize];
+    uint8_t* dstbuf = (uint8_t*)av_malloc(avpicture_get_size(AV_PIX_FMT_YUV420P, FRAMEWITH * 2, FRAMEHEIGTH));
     avpicture_fill((AVPicture*)pDstFrame, dstbuf, AV_PIX_FMT_YUV420P, FRAMEWITH * 2, FRAMEHEIGTH);
 
     pDstFrame->width = FRAMEWITH * 2;
@@ -134,7 +133,7 @@ int main(int argc, char* argv[])
 
 
     //将预先分配的AVFrame图像背景数据设置为黑色背景  
-    memset(pDstFrame->data[0], 0, FRAMEWITH * FRAMEHEIGTH * 2);
+    memset(pDstFrame->data[0], 0,    FRAMEWITH * FRAMEHEIGTH * 2);
     memset(pDstFrame->data[1], 0x80, FRAMEWITH * FRAMEHEIGTH / 2);
     memset(pDstFrame->data[2], 0x80, FRAMEWITH * FRAMEHEIGTH / 2);
 
@@ -182,54 +181,68 @@ int main(int argc, char* argv[])
                     pFrameYUV2->data, pFrameYUV2->linesize);
                 printf("2解码后的帧index: %d\n", frame_cnt2);
                  
-                for (int i = 0; i < FRAMEHEIGTH; i++)
-                {
-                  fwrite(pFrameYUV1->data[0] + i * pFrameYUV1->linesize[0], 1, pFrameYUV1->linesize[0], fp_yuv420);    //Y1   
-                  fwrite(pFrameYUV2->data[0] + i * pFrameYUV2->linesize[0], 1, pFrameYUV2->linesize[0], fp_yuv420);    //Y2
-                }
-                for (int i = 0; i < FRAMEHEIGTH / 2; i++)
-                {
-                  fwrite(pFrameYUV1->data[1] + i * pFrameYUV1->linesize[1], 1, pFrameYUV1->linesize[1], fp_yuv420);  //U1    
-                  fwrite(pFrameYUV2->data[1] + i * pFrameYUV2->linesize[1], 1, pFrameYUV2->linesize[1], fp_yuv420);  //U2    
-                }
-                for (int i = 0; i < FRAMEHEIGTH / 2; i++)
-                {
-                  fwrite(pFrameYUV1->data[2] + i * pFrameYUV1->linesize[2], 1, pFrameYUV1->linesize[2], fp_yuv420);  //V1  
-                  fwrite(pFrameYUV2->data[2] + i * pFrameYUV2->linesize[2], 1, pFrameYUV2->linesize[2], fp_yuv420);  //V2  
-                }
-                //if (pFrameYUV1 && pFrameYUV2)
+                //for (int i = 0; i < FRAMEHEIGTH; i++)
                 //{
-                //    int nYIndex = 0;//每一帧Y值中的第n行
-                //    int nUVIndex = 0;
-                //
-                //    //如果只有Y是没有问题的
-                //    for (int i = 0; i < FRAMEHEIGTH; i++)
-                //    {
-                //        //Y  
-                //        memcpy(pDstFrame->data[0] + i * FRAMEWITH * 2, pFrameYUV1->data[0] + nYIndex * FRAMEWITH, FRAMEWITH);
-                //        memcpy(pDstFrame->data[0] + FRAMEWITH + i * FRAMEWITH * 2, pFrameYUV2->data[0] + nYIndex * FRAMEWITH, FRAMEWITH);
-                //
-                //        nYIndex++;
-                //    }
-                //
-                //
-                //    for (int i = 0; i < FRAMEHEIGTH / 4; i++)
-                //    {
-                //        //U
-                //        //memcpy(pDstFrame->data[1] + i * FRAMEWITH * 2, pFrameYUV1->data[1] + nUVIndex * FRAMEWITH, FRAMEWITH);
-                //        //memcpy(pDstFrame->data[1] + FRAMEWITH / 2 + i * FRAMEWITH * 2, pFrameYUV1->data[1] + nUVIndex * FRAMEWITH, FRAMEWITH);
-                //        //memcpy(pDstFrame->data[1] + FRAMEWITH + i * FRAMEWITH * 2, pFrameYUV2->data[1] + nUVIndex * FRAMEWITH, FRAMEWITH);
-                //        //V  
-                //        memcpy(pDstFrame->data[2] + i * FRAMEWITH * 2, pFrameYUV1->data[2] + nUVIndex * FRAMEWITH, FRAMEWITH);
-                //        //memcpy(pDstFrame->data[2] + FRAMEWITH + i * FRAMEWITH * 2, pFrameYUV1->data[2] + nUVIndex * FRAMEWITH, FRAMEWITH);
-                //        //memcpy(pDstFrame->data[2] + FRAMEWITH + i * FRAMEWITH * 2, pFrameYUV2->data[2] + nUVIndex * FRAMEWITH, FRAMEWITH);
-                //        nUVIndex++;
-                //    }
+                //  fwrite(pFrameYUV1->data[0] + i * pFrameYUV1->linesize[0], 1, pFrameYUV1->linesize[0], fp_yuv420);    //Y1   
+                // //fwrite(pFrameYUV2->data[0] + i * pFrameYUV2->linesize[0], 1, pFrameYUV2->linesize[0], fp_yuv420);    //Y2
                 //}
-                //
-                //fwrite(pDstFrame->data[0], 1, FRAMEWITH * FRAMEHEIGTH * 2, fp_yuv420);
-                //fwrite(pDstFrame->data[1], 1, FRAMEWITH * FRAMEHEIGTH / 2, fp_yuv420);
-                //fwrite(pDstFrame->data[2], 1, FRAMEWITH * FRAMEHEIGTH / 2, fp_yuv420);
+                //for (int i = 0; i < FRAMEHEIGTH; i++)
+                //{
+                //  fwrite(pFrameYUV2->data[0] + i * pFrameYUV2->linesize[0], 1, pFrameYUV2->linesize[0], fp_yuv420);    //Y2
+                //}
+                //for (int i = 0; i < FRAMEHEIGTH / 2; i++)
+                //{
+                //  fwrite(pFrameYUV1->data[1] + i * pFrameYUV1->linesize[1], 1, pFrameYUV1->linesize[1], fp_yuv420);  //U1    
+                // // fwrite(pFrameYUV2->data[1] + i * pFrameYUV2->linesize[1], 1, pFrameYUV2->linesize[1], fp_yuv420);  //U2    
+                //}
+                //for (int i = 0; i < FRAMEHEIGTH / 2; i++)
+                //{
+                //  fwrite(pFrameYUV2->data[1] + i * pFrameYUV2->linesize[1], 1, pFrameYUV2->linesize[1], fp_yuv420);  //U2    
+                //}
+                //for (int i = 0; i < FRAMEHEIGTH / 2; i++)
+                //{
+                //  fwrite(pFrameYUV1->data[2] + i * pFrameYUV1->linesize[2], 1, pFrameYUV1->linesize[2], fp_yuv420);  //V1  
+                //  //fwrite(pFrameYUV2->data[2] + i * pFrameYUV2->linesize[2], 1, pFrameYUV2->linesize[2], fp_yuv420);  //V2  
+                //}
+                //for (int i = 0; i < FRAMEHEIGTH / 2; i++)
+                //{
+                //  fwrite(pFrameYUV2->data[2] + i * pFrameYUV2->linesize[2], 1, pFrameYUV2->linesize[2], fp_yuv420);  //V2  
+                //}
+                if (pFrameYUV1 && pFrameYUV2)
+                {
+                    int nYIndex = 0;//每一帧Y值中的第n行
+                    int nUIndex = 0;
+                    int nVIndex = 0;
+                
+                    //如果只有Y是没有问题的
+                    for (int i = 0; i < FRAMEHEIGTH; i++)
+                    {
+                        //Y  
+                        memcpy(pDstFrame->data[0] + i * pDstFrame->linesize[0], pFrameYUV1->data[0] + nYIndex * pFrameYUV1->linesize[0], pFrameYUV1->linesize[0]);
+                        memcpy(pDstFrame->data[0] + pDstFrame->linesize[0] + i * pDstFrame->linesize[0], pFrameYUV2->data[0] + nYIndex * pFrameYUV2->linesize[0], pFrameYUV2->linesize[0]);
+                
+                        nYIndex++;
+                    }
+    
+                    for (int i = 0; i < FRAMEHEIGTH / 2; i++)
+                    {
+                      //U
+                      memcpy(pDstFrame->data[1] + i * pDstFrame->linesize[1], pFrameYUV1->data[1] + nUIndex * pFrameYUV1->linesize[1], pFrameYUV1->linesize[1]);
+                      memcpy(pDstFrame->data[1] + i * pDstFrame->linesize[1] + pDstFrame->linesize[1], pFrameYUV2->data[1] + nUIndex * pFrameYUV2->linesize[1], pFrameYUV2->linesize[1]);
+                      nUIndex++;
+                    }
+                    for (int i = 0; i < FRAMEHEIGTH / 2; i++)
+                    {
+                        //V  
+                        memcpy(pDstFrame->data[2] + i * pDstFrame->linesize[2], pFrameYUV1->data[2] + nVIndex * pFrameYUV1->linesize[2], pFrameYUV1->linesize[2]);
+                        memcpy(pDstFrame->data[2] + i * pDstFrame->linesize[2] + pDstFrame->linesize[2], pFrameYUV2->data[2] + nVIndex * pFrameYUV2->linesize[2], pFrameYUV2->linesize[2]);
+                        nVIndex++;
+                    }
+                }
+                
+                fwrite(pDstFrame->data[0], 1, FRAMEWITH * FRAMEHEIGTH * 2, fp_yuv420);
+                fwrite(pDstFrame->data[1], 1, FRAMEWITH * FRAMEHEIGTH / 2, fp_yuv420);
+                fwrite(pDstFrame->data[2], 1, FRAMEWITH * FRAMEHEIGTH / 2, fp_yuv420);
 
                 frame_cnt1++;
                 frame_cnt2++;

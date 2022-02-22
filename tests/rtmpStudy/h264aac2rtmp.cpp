@@ -91,13 +91,13 @@ int main(int argc, char* argv[])
 #endif
 
   //const char *in_filename_v = "cuc_ieschool.ts";//Input file URL
-  const char *in_filename_v = "E:/common/test.h264";
+  const char *in_filename_v = "E:/common/tang3.h264";
   //const char *in_filename_a = "cuc_ieschool.mp3";
   //const char *in_filename_a = "gowest.m4a";
   //const char *in_filename_a = "gowest.aac";
-  const char *in_filename_a = "E:/common/output.aac";
+  const char *in_filename_a = "E:/common/tang3.aac";
 
-  const char *out_filename = "E:/testflv.flv";
+  const char *out_filename = "rtmp://live-push.bilivideo.com/live-bvc/?streamname=live_98579344_16311849&key=db3d9db495ef7a7852dcc1544a267ba7&schedule=rtmp&pflag=1";
   //const char *out_filename = "/Users/orange/Downloads/output.mp4";
 
   av_register_all();

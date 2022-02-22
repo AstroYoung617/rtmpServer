@@ -79,6 +79,42 @@ int NetManager::rtmpInit(int step) {
 
 int NetManager::sendRTMPData(AVPacket* packet) {
   std::unique_lock<std::mutex> senderLk(*mutex4Sender);
+  //if (packet->stream_index == 0) {
+  //  if (packet->pts == AV_NOPTS_VALUE) {
+  //    //Write PTS
+  //    AVRational time_base1 = video_st->time_base;
+  //    //Duration between 2 frames (us)
+  //    int64_t calc_duration = (double)AV_TIME_BASE / av_q2d(video_st->r_frame_rate);
+  //    //Parameters
+  //    packet->pts = (double)(frame_index_v * calc_duration) / (double)(av_q2d(time_base1) * AV_TIME_BASE);
+  //    packet->dts = packet->pts;
+  //    packet->duration = (double)calc_duration / (double)(av_q2d(time_base1) * AV_TIME_BASE);
+  //    frame_index_v++;
+  //  }
+  //  cur_pts_v = packet->pts;
+  //}
+  //if (packet->stream_index == 1) {
+  //  if (packet->pts == AV_NOPTS_VALUE) {
+  //    //Write PTS
+  //    AVRational time_base1 = audio_st->time_base;
+  //    //Duration between 2 frames (us)
+  //    int64_t calc_duration = (double)AV_TIME_BASE / av_q2d(audio_st->r_frame_rate);
+  //    //Parameters
+  //    packet->pts = (double)(frame_index_a * calc_duration) / (double)(av_q2d(time_base1) * AV_TIME_BASE);
+  //    packet->dts = packet->pts;
+  //    packet->duration = (double)calc_duration / (double)(av_q2d(time_base1) * AV_TIME_BASE);
+  //    frame_index_a++;
+  //  }
+  //  cur_pts_a = packet->pts;
+  //}
+  if (packet->stream_index == 0)
+  {
+    std::cout << "video: " << " pts:" << packet->pts << " dts:" << packet->dts << " duration:" << packet->duration << std::endl;
+    //printf("%lld", pkt.pts);
+  }
+  else {
+    std::cout << "audio: " << " pts:" << packet->pts << " dts:" << packet->dts << " duration:" << packet->duration << std::endl;
+  }
   int ret = av_interleaved_write_frame(pFormatCtx, packet);
   if (ret < 0) {
     char buf[1024] = { 0 };

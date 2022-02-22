@@ -43,12 +43,12 @@ endif ()
 list(APPEND RESOURCE_FILES resources/application.ini)
 
 #添加cpp文件，相当于引入include
-aux_source_directory(src/media CPPLIST)
-aux_source_directory(src/net CPPLIST)
-aux_source_directory(src/business CPPLIST)
-aux_source_directory(src/media/decoder CPPLIST)
-aux_source_directory(src/media/encoder CPPLIST)
-aux_source_directory(src/media/other CPPLIST)
+#aux_source_directory(src/media CPPLIST)
+#aux_source_directory(src/net CPPLIST)
+#aux_source_directory(src/business CPPLIST)
+#aux_source_directory(src/media/decoder CPPLIST)
+#aux_source_directory(src/media/encoder CPPLIST)
+#aux_source_directory(src/media/other CPPLIST)
 
 if(WIN32)
     add_executable (${PROJECT_NAME}
@@ -75,6 +75,7 @@ if(WIN32)
             tests/ffmpeg/combine2different.cpp
             #tests/sometest.cpp
             #tests/testArgv.cpp
+            #tests/rtpStudy/rtpSendh264&aac.cpp
             )
 elseif(UNIX)
     add_executable (${PROJECT_NAME}

@@ -63,6 +63,9 @@ private:
   AVOutputFormat* fmt = nullptr;
   AVStream* video_st = nullptr;
   AVStream* audio_st = nullptr;
+  int64_t cur_pts_v = 0, cur_pts_a = 0;
+  int frame_index_v = 0;
+  int frame_index_a = 0;
 
   std::string rtmpUrl = "rtmp://live-push.bilivideo.com/live-bvc/?streamname=live_352390639_21965190&key=24f4401750f2d2d7c1590021bc0946d0&schedule=rtmp&pflag=9";
   std::unique_ptr<std::mutex> mutex4Sender = nullptr;

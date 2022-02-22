@@ -136,15 +136,16 @@ int VideoSender::sendFrame(AVFrame* frame) {
   if (packet) {
     packet->duration = ceil(1000 / frameRate);
     count++;
-    I_LOG("video packet index {} pts {} dts {} dura {}", count, packet->pts, packet->dts, packet->duration);
+    //I_LOG("video packet index {} pts {} dts {} dura {}", count, packet->pts, packet->dts, packet->duration);
+    lastPts = packet->pts;
     packet->stream_index = 0;
     lastPts = packet->pts;
     if (netManager) {
-      //long long now = GetTickCount64();
-      //if (packet->pts > now)
-      //{
-      //  std::this_thread::sleep_for(std::chrono::microseconds((packet->pts - now) * 1000));
-      //}
+      long long now = GetTickCount64() - startTime;
+      if (packet->pts > now)
+      {
+       av_usleep(packet->pts - now);
+      }
       int ret = netManager->sendRTMPData(packet);
       encoderLk.unlock();
       //fix memory leak, 这种内存泄漏的地方尤其要注意，是因为使用的函数直接返回数组，那么就应该在不再使用的时候进行释放。

@@ -10,6 +10,7 @@
 #include <net/NetManager.h>
 #include <media/other/AudioUtil.hpp>
 #include <media/encoder/AudioEncoder.h>
+#include <libavutil/time.h>
 
 class AudioSender {
 public:

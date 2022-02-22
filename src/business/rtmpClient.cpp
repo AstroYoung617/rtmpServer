@@ -193,6 +193,7 @@ void RtmpClient::setStart(bool _start) {
 
 		audioSender = std::make_unique<AudioSender>(netManager);
 		audioSender->initAudioEncoder(encoderinfo);
+		audioSender->setStartTime(GetTickCount64());
 
 		//create audioSend thread
 		std::thread send_audio(&RtmpClient::sendAudioData, this);

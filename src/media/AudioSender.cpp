@@ -2,7 +2,6 @@
 // Created by hopeworld on 2021/11/30.
 //
 #include <media/AudioSender.h>
-#include <libavutil/time.h>
 long long last = 0;
 
 void av_packet_rescale_ts(AVPacket* pkt, AVRational src_tb, AVRational dst_tb) {
@@ -63,11 +62,11 @@ int AudioSender::send(uint8_t* buf, int len) {
   if (packet) {
     if (netManager) {
       //已经过去的时间
-      //long long now = 0;
+      long long now = GetTickCount64() - startTime;
       int duration = ceil(1024 * 1000 / out.sample_rate);
       packet->pts = count*duration;    
       packet->dts = packet->pts;
-      I_LOG("audio packet index {} pts {} dts {} dura {}", count, packet->pts, packet->dts, duration);
+      //I_LOG("audio packet index {} pts {} dts {} dura {}", count, packet->pts, packet->dts, duration);
       packet->duration = packet->pts - lastPts;
       lastPts = packet->pts;
       if (count > 0) {
@@ -79,7 +78,7 @@ int AudioSender::send(uint8_t* buf, int len) {
       //{
       //    I_LOG("delay");
       //  //usleep((packet->pts - now) * 1000);
-      //  std::this_thread::sleep_for(std::chrono::microseconds((packet->pts - now) * 1000));
+      //  av_usleep(packet->pts - now);
       //}
       int ret = netManager->sendRTMPData(packet);
       if (ret < 0) {
