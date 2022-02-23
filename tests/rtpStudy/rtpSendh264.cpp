@@ -41,9 +41,9 @@ typedef int SOCKET;
 
 #define H264_FILE_NAME  "./test.h264"
 #define CLIENT_IP       "127.0.0.1"   //destination ip
+#define FPS             25                
 #define CLIENT_PORT     1234              //destination port
 
-#define FPS             25                
 
 
 //写成内联函数减少开销
