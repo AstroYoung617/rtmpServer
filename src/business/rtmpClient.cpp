@@ -32,7 +32,6 @@ void RtmpClient::createAudioCh(int _port) {
 	//AudioRecvVct.push_back(*audioReceiver);
 
 	//encoder info
-
 	std::thread get_audio(&RtmpClient::getAudioData, this);
 	std::thread send_audio(&RtmpClient::sendAudioData, this);
 	threadMap["pollAu"] = std::move(get_audio);
@@ -83,6 +82,7 @@ void RtmpClient::getAudioData() {
 }
 
 void RtmpClient::sendAudioData() {
+	//std::this_thread::sleep_for(std::chrono::milliseconds(1900));
 	while (1) {
 		if (!startPush) {
 			std::unique_lock<std::mutex> lk(*mtx);
@@ -90,7 +90,7 @@ void RtmpClient::sendAudioData() {
 		}
 		std::unique_lock<std::mutex> lck(*aumtx);
 		aucv->wait(lck);
-		//if (recvAuFrameDq.size() && recvAuFrameDq.front()->data[0])
+		if (recvAuFrameDq.size() && recvAuFrameDq.front()->data[0])
 			send2Rtmp(1);
 		//std::this_thread::sleep_for(std::chrono::milliseconds(25));
 		//lck.unlock();
@@ -124,11 +124,11 @@ void RtmpClient::sendVideoData() {
 			cv->wait(lk);
 		}
 		std::unique_lock<std::mutex> lck(*vdmtx);
-		vdcv->wait_for(lck, std::chrono::milliseconds(100));
+		vdcv->wait(lck);
 		//vdcv->wait_for(lck, std::chrono::milliseconds(45));
 		if (recvVdFrameDq.size() && recvVdFrameDq.front()->data[0]) 
 			send2Rtmp(2);
-		//std::this_thread::sleep_for(std::chrono::milliseconds(45));
+		//std::this_thread::sleep_for(std::chrono::milliseconds(95));
 
 	 lck.unlock();
 

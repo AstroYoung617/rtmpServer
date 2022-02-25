@@ -409,7 +409,7 @@ void sendH264(int16_t _port) {
     //std::cout << std::endl;
     rtpPacket->rtpHeader.timestamp += 90000 / FPS;
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000 / fps));
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000 / FPS - 5));
   }
 
   free(rtpPacket);
