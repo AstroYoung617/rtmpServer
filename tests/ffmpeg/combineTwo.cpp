@@ -1,5 +1,5 @@
 #include <stdio.h>
-
+#include <iostream>
 #define __STDC_CONSTANT_MACROS
 #define FRAMEWITH 640
 #define FRAMEHEIGTH 480
@@ -99,6 +99,8 @@ int main(int argc, char* argv[])
     printf("--------------- File Information ----------------\n");
     av_dump_format(pFormatCtx,0,filepath,0);
     printf("-------------------------------------------------\n");
+    std::cout << "-------------" << pCodecCtx->pix_fmt << "-----------" << std::endl;
+
     img_convert_ctx = sws_getContext(pCodecCtx->width, pCodecCtx->height, pCodecCtx->pix_fmt, 
         FRAMEWITH, FRAMEHEIGTH, AV_PIX_FMT_YUV420P, 4, NULL, NULL, NULL);
      //   FRAMEWITH, FRAMEHEIGTH, AV_PIX_FMT_YUV420P, SWS_BICUBIC, NULL, NULL, NULL);

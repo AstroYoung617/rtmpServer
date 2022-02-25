@@ -61,6 +61,7 @@ void RtmpClient::getAudioData() {
 	//	//TODO 之后将多个videoRecv的data进行拼接后传给videoSender
 	//}
 	// 
+	int count = 0;
 	while (1) {
 		if (!startPush) {
 			std::unique_lock<std::mutex> lk(*mtx);
@@ -69,10 +70,15 @@ void RtmpClient::getAudioData() {
 		audioReceiver->processRecvRtpData();
 		//先只用一个AVFrame作为存储，将其传递给videoSender
 		recvFrameAu = audioReceiver->getData();
-		if (recvFrameAu && recvFrameAu->data[0])
+		if (recvFrameAu && recvFrameAu->data[0]) {
 			recvAuFrameDq.push_back(recvFrameAu);
+			count++;
+
+			aucv->notify_one();
+		}
 		//TODO 之后将多个videoRecv的data进行拼接后传给videoSender
 		//lk.unlock();
+		//std::this_thread::sleep_for(std::chrono::milliseconds(20));
 	}
 }
 
@@ -82,10 +88,12 @@ void RtmpClient::sendAudioData() {
 			std::unique_lock<std::mutex> lk(*mtx);
 			cv->wait(lk);
 		}
-		if (recvAuFrameDq.size() && recvAuFrameDq.front()->data[0])
+		std::unique_lock<std::mutex> lck(*aumtx);
+		aucv->wait(lck);
+		//if (recvAuFrameDq.size() && recvAuFrameDq.front()->data[0])
 			send2Rtmp(1);
-		//std::this_thread::sleep_for(std::chrono::milliseconds(20));
-		//lk.unlock();
+		//std::this_thread::sleep_for(std::chrono::milliseconds(25));
+		//lck.unlock();
 	}
 }
 
@@ -100,11 +108,12 @@ void RtmpClient::getVideoData() {
 		videoRecv.processRecvRtpData();
 		//先只用一个AVFrame作为存储，将其传递给videoSender
 		recvFrameVd = videoRecv.getData();
-		if (recvFrameVd && recvFrameVd->data[0])
+		if (recvFrameVd && recvFrameVd->data[0]) {
 			recvVdFrameDq.push_back(recvFrameVd);
+			vdcv->notify_one();
+		}
 		//TODO 之后将多个videoRecv的data进行拼接后传给videoSender
 		//lk.unlock();
-		vdcv->notify_one();
 	}
 }
 
@@ -115,11 +124,11 @@ void RtmpClient::sendVideoData() {
 			cv->wait(lk);
 		}
 		std::unique_lock<std::mutex> lck(*vdmtx);
-		//vdcv->wait(lck);
+		vdcv->wait_for(lck, std::chrono::milliseconds(100));
 		//vdcv->wait_for(lck, std::chrono::milliseconds(45));
 		if (recvVdFrameDq.size() && recvVdFrameDq.front()->data[0]) 
 			send2Rtmp(2);
-		//std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		//std::this_thread::sleep_for(std::chrono::milliseconds(45));
 
 	 lck.unlock();
 
@@ -149,7 +158,7 @@ void RtmpClient::setStart(bool _start) {
 		//videoSender / audioSender init encoder
 		videoSender = std::make_unique<VideoSender>(mtx, cv, netManager);
 		VideoDefinition vd = VideoDefinition(640, 480);
-		videoSender->initEncoder(vd, 19);
+		videoSender->initEncoder(vd, 10);
 
 		if (netManager->rtmpInit(1) == -1) {
 			return;
@@ -190,6 +199,11 @@ void RtmpClient::send2Rtmp(int _type) {
 		//audioSender->send(recvFrameAu->data[0], len);
 	}
 	else if (_type == 2) {
+		if (videoSender->lastPts / 2 > audioSender->lastPts) {
+			//av_usleep(1000 * (videoSender->lastPts * 2 - audioSender->lastPts));
+			recvVdFrameDq.pop_front();
+			return;
+		}
 		videoSender->sendFrame(recvVdFrameDq.front());
 		recvVdFrameDq.pop_front();
 		//videoSender->sendFrame(combineYUV(recvFrameVd));

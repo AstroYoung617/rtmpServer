@@ -25,12 +25,12 @@ int VideoReceiver::getPort() {
 
 AVFrame* VideoReceiver::getData() {
 	std::unique_lock<std::mutex> lk(*mutex);
-	if (recvFrameCache && recvFrameCache->data[0]) {
-		lk.unlock();
+	//if (recvFrameCache && recvFrameCache->data[0]) {
+	//	lk.unlock();
 		return recvFrameCache;
-	}
-	else
-		return nullptr;
+	//}
+	//else
+	//	return nullptr;
 }
 
 void VideoReceiver::setData(uint8_t* _data) {

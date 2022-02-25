@@ -65,7 +65,7 @@ void VideoSender::initEncoder(const VideoDefinition& captureSize, int frameRate)
   encoder->setIsCrf(false);
   encoder->setProfile("high");
   encoder->setMaxBFrame(0);
-  encoder->setGopSize(20);
+  encoder->setGopSize(30);
   encoder->setPixFmt(AV_PIX_FMT_BGRA);
   this->frameRate = frameRate;
   encoder->setFrameRate(frameRate);
@@ -99,9 +99,10 @@ int VideoSender::sendFrame(AVFrame* frame) {
     static_cast<AVPixelFormat>(frame->format));
   AVPacket* packet = encoder->pollAVPacket();
   if (packet) {
-    packet->duration = ceil(1000 / frameRate);
+    packet->duration = ceil(1000 / frameRate) * 2;
     count++;
-    I_LOG("video packet index {} pts {} dts {} dura {}", count, packet->pts, packet->dts, packet->duration);
+    //I_LOG("video packet index {} pts {} dts {} dura {}", count, packet->pts, packet->dts, packet->duration);
+    lastPts = packet->pts;
     packet->stream_index = 0;
     if (netManager) {
       //long long now = GetTickCount64();

@@ -57,9 +57,9 @@ if(WIN32)
             #tests/mp42rtmp.cpp
             #tests/h264aac2rtmp.cpp
             #tests/h2642rtmp.cpp
-            #tests/test.cpp
+            tests/test.cpp
             #tests/rtpSystem.cpp
-            tests/rtpStudy/rtp.cpp
+            #tests/rtpStudy/rtp.cpp
             #tests/rtpStudy/rtpSendaac.cpp
             #tests/rtpStudy/rtpServer2.cpp
             #tests/rtpStudy/rtpClient2.cpp
@@ -72,7 +72,8 @@ if(WIN32)
             #tests/ffmpeg/h264ToYuv.cpp
             #tests/ffmpeg/decoder.cpp
             #tests/ffmpeg/combineTwo.cpp
-            tests/rtpStudy/rtpSendaach264.cpp
+            #tests/rtmpstudy/h264aac2rtmp.cpp
+            #tests/rtpStudy/rtpSendaach264.cpp
             #tests/sometest.cpp
             #tests/testArgv.cpp
             )

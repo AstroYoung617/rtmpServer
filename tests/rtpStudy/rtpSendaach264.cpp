@@ -44,7 +44,7 @@ typedef int SOCKET;
 #define CLIENT_PORT 1234
 #define H264_FILE_NAME  "./test.h264"
 #define CLIENT_IP       "127.0.0.1"   //destination ip
-#define FPS             25         
+#define FPS             10
 
 struct AdtsHeader
 {
