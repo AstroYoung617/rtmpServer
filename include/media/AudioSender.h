@@ -1,3 +1,10 @@
+/*
+  * Created by Astro
+  * Date : 2022.01.27
+  * Descryption:
+    *		用于将audioReceiver接收到的pcm音频数据编码为aac，交付给netmanager发送到rtmpURL
+*/
+
 #pragma once
 
 #include <net/NetManager.h>

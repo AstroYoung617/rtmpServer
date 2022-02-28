@@ -69,8 +69,8 @@ int AudioSender::send(uint8_t* buf, int len) {
       //long long now = 0;
       int duration = ceil(1024 * 1000 / out.sample_rate);
       packet->pts = count*duration;    
-      I_LOG("audio packet index {} pts {} dura {}", count, packet->pts, duration);
       packet->dts = packet->pts;
+      I_LOG("audio packet index {} pts {} dts {} dura {}", count, packet->pts, packet->dts, duration);
       packet->duration = packet->pts - lastPts;
       lastPts = packet->pts;
       if (count > 0) {

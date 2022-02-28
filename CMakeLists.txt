@@ -70,10 +70,10 @@ if(WIN32)
             #tests/rtpStudy/unPackrtph264.cpp
             #tests/rtpStudy/unPackrtpaac.cpp
             #tests/ffmpeg/h264ToYuv.cpp
-            #tests/sometest.cpp
             #tests/ffmpeg/decoder.cpp
-            #tests/testArgv.cpp
             #tests/ffmpeg/combineTwo.cpp
+            #tests/sometest.cpp
+            #tests/testArgv.cpp
             )
 elseif(UNIX)
     add_executable (${PROJECT_NAME}

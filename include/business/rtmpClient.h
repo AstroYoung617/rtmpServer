@@ -10,6 +10,7 @@
 #include <iostream>
 #include <string>
 #include <memory>
+#include <deque>
 #include <media/AudioReceiver.h>
 #include <media/VideoReceiver.h>
 #include <media/VideoSender.h>
@@ -17,6 +18,7 @@
 #include <other/loggerApi.h>
 #include <media/other/AudioUtil.hpp>
 using std::string;
+using std::deque;
 
 struct RtmpClient {
 	RtmpClient();
@@ -40,6 +42,10 @@ private:
 
 	void getAudioData();
 	void sendAudioData();
+
+	//use to test yuv combine
+	AVFrame* combineYUV(AVFrame* pFrame);
+
 	//use to manage the threads 
 	std::unordered_map<string, std::thread> threadMap = {};
 
@@ -60,6 +66,9 @@ private:
 
 	AVFrame* recvFrameVd = nullptr;
 	AVFrame* recvFrameAu = nullptr;
+
+	deque<AVFrame*> recvVdFrameDq;
+	deque<AVFrame*> recvAuFrameDq;
 
 	//传递给videoReceiver和videoSender的互斥量及锁
 	std::mutex* vdmtx = new std::mutex;

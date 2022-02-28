@@ -56,6 +56,6 @@ private:
 	std::unique_ptr<AuDecoder> decoder;
 
 	AVFrame* recvFrame = nullptr;
-
+	RtpHeader* rtp_hdr = NULL;
 };
 
