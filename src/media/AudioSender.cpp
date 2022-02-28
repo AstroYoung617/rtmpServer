@@ -51,6 +51,7 @@ void AudioSender::initAudioEncoder(CoderInfo encoderInfo) {
   this->out = out;
 
   encoder->copyParams(netManager->getAudioStream()->codecpar);
+  encoder->copyParams(netManager->getAudioStream1()->codecpar);
 }
 
 int AudioSender::stop() {

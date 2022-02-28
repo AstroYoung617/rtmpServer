@@ -80,6 +80,7 @@ void VideoSender::initEncoder(const VideoDefinition& captureSize, int frameRate)
   //netManager->newVideoStream(encoder->getEncoderCtx());
 
   encoder->copyParams(netManager->getVideoStream()->codecpar);
+  encoder->copyParams(netManager->getVideoStream1()->codecpar);
 }
 
 int VideoSender::stop() {

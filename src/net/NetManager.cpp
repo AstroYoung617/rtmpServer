@@ -18,13 +18,14 @@ void NetManager::setRtmpUrl(std::string _rtmpUrl) {
 }
 
 int NetManager::rtmpInit(int step) {
-  int ret;
+  int ret, ret1;
   mutex4Sender = std::make_unique<std::mutex>();
   if (step == 0) {
     av_register_all();
     //初始化网络库
     avformat_network_init();
     pFormatCtx = avformat_alloc_context();
+    pFormatCtx1 = avformat_alloc_context();
 
     I_LOG("connecting to rtmp server :{}", rtmpUrl.c_str());
     //设置输出文件
@@ -33,13 +34,27 @@ int NetManager::rtmpInit(int step) {
       E_LOG("connect rtmp fail:{}", ret);
       return -1;
     }
+    I_LOG("connecting to rtmp server :{}", rtmpUrl1.c_str());
+    ret1 = avformat_alloc_output_context2(&pFormatCtx1, 0, "flv", rtmpUrl1.c_str());
+    if (ret1) {
+      E_LOG("connect rtmp fail:{}", ret1);
+      return -1;
+    }
     fmt = pFormatCtx->oformat;
+    fmt1 = pFormatCtx1->oformat;
 
     //新建一个输出流
 
     if (video_st == nullptr) {
       video_st = avformat_new_stream(pFormatCtx, NULL);
       if (video_st == NULL) {
+        E_LOG("failed allocating video stream\n");
+        return -1;
+      }
+    }    
+    if (video_st1 == nullptr) {
+      video_st1 = avformat_new_stream(pFormatCtx1, NULL);
+      if (video_st1 == NULL) {
         E_LOG("failed allocating video stream\n");
         return -1;
       }
@@ -54,11 +69,22 @@ int NetManager::rtmpInit(int step) {
         return -1;
       }
     }
+    if (audio_st1 == nullptr) {
+      audio_st1 = avformat_new_stream(pFormatCtx1, NULL);
+      if (audio_st1 == NULL) {
+        E_LOG("failed allocating audio stream\n");
+        return -1;
+      }
+    }
 
   }
   else {
     //打开输出文件
     if (avio_open(&pFormatCtx->pb, rtmpUrl.c_str(), AVIO_FLAG_WRITE)) {
+      E_LOG("connect to rtmp server fail!");
+      return -1;
+    }
+    if (avio_open(&pFormatCtx1->pb, rtmpUrl1.c_str(), AVIO_FLAG_WRITE)) {
       E_LOG("connect to rtmp server fail!");
       return -1;
     }
@@ -71,27 +97,42 @@ int NetManager::rtmpInit(int step) {
       E_LOG("write header error:{}", ret);
       return -1;
     }
+    ret1 = avformat_write_header(pFormatCtx1, nullptr);
+    if (ret1) {
+      E_LOG("write header error:{}", ret1);
+      return -1;
+    }
 
     av_dump_format(pFormatCtx, 0, rtmpUrl.c_str(), 1);
+    av_dump_format(pFormatCtx1, 0, rtmpUrl1.c_str(), 1);
   }
   return 0;
 }
 
 int NetManager::sendRTMPData(AVPacket* packet) {
   std::unique_lock<std::mutex> senderLk(*mutex4Sender);
+
   if (packet->stream_index == 0) {
+    vtime = packet->pts;
     I_LOG("video timestamp = {}", packet->pts * av_q2d(video_st->time_base)); //这样计算出来的时间就是秒
   }
   else {
+    atime = packet->pts;
     I_LOG("audio timestamp = {}", packet->pts * av_q2d(audio_st->time_base));
   }
   //I_LOG("audio time = {}, video time = {}", av_q2d(audio_st->time_base), av_q2d(video_st->time_base));
-
+  auto packet1 = av_packet_clone(packet);
   int ret = av_interleaved_write_frame(pFormatCtx, packet);
   if (ret < 0) {
     char buf[1024] = { 0 };
     av_strerror(ret, buf, sizeof(buf));
     E_LOG("push error code {}, error info {}", ret, buf);
+  }
+  int ret1 = av_interleaved_write_frame(pFormatCtx1, packet1);
+  if (ret1 < 0) {
+    char buf[1024] = { 0 };
+    av_strerror(ret1, buf, sizeof(buf));
+    E_LOG("push error code {}, error info {}", ret1, buf);
   }
   senderLk.unlock();
   return ret;

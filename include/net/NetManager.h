@@ -47,8 +47,14 @@ struct NetManager {
   AVStream* getAudioStream() {
     return audio_st;
   }
+  AVStream* getAudioStream1() {
+    return audio_st1;
+  }
   AVStream* getVideoStream() {
     return video_st;
+  }  
+  AVStream* getVideoStream1() {
+    return video_st1;
   }
   AVFormatContext* getOutFormatCtx() {
     return pFormatCtx;
@@ -60,10 +66,18 @@ struct NetManager {
 
 private:
   AVFormatContext* pFormatCtx = nullptr;
+  AVFormatContext* pFormatCtx1 = nullptr;
   AVOutputFormat* fmt = nullptr;
+  AVOutputFormat* fmt1 = nullptr;
   AVStream* video_st = nullptr;
+  AVStream* video_st1 = nullptr;
   AVStream* audio_st = nullptr;
+  AVStream* audio_st1 = nullptr;
+
+  bool test = 1;
+  int64_t atime = 0, vtime = 0;
 
   std::string rtmpUrl = "rtmp://live-push.bilivideo.com/live-bvc/?streamname=live_352390639_21965190&key=24f4401750f2d2d7c1590021bc0946d0&schedule=rtmp&pflag=9";
+  std::string rtmpUrl1 = "rtmp://sendtc3a.douyu.com/live/10437164r7kXH4Yv?wsSecret=95b09701aebaf729a85985dc423a7502&wsTime=621c28d5&wsSeek=off&wm=0&tw=0&roirecognition=0&record=flv&origin=tct";
   std::unique_ptr<std::mutex> mutex4Sender = nullptr;
 };
