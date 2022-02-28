@@ -79,12 +79,12 @@ int NetManager::rtmpInit(int step) {
 
 int NetManager::sendRTMPData(AVPacket* packet) {
   std::unique_lock<std::mutex> senderLk(*mutex4Sender);
-  if (packet->stream_index == 0) {
-    I_LOG("video timestamp = {}", packet->pts * av_q2d(video_st->time_base)); //这样计算出来的时间就是秒
-  }
-  else {
-    I_LOG("audio timestamp = {}", packet->pts * av_q2d(audio_st->time_base));
-  }
+  //if (packet->stream_index == 0) {
+  //  I_LOG("video timestamp = {}", packet->pts * av_q2d(video_st->time_base)); //这样计算出来的时间就是秒
+  //}
+  //else {
+  //  I_LOG("audio timestamp = {}", packet->pts * av_q2d(audio_st->time_base));
+  //}
   //I_LOG("audio time = {}, video time = {}", av_q2d(audio_st->time_base), av_q2d(video_st->time_base));
 
   int ret = av_interleaved_write_frame(pFormatCtx, packet);

@@ -33,7 +33,8 @@ private:
 	void createVideoCh(int _port);
 	std::vector<AudioReceiver> AudioRecvVct;
 	std::vector<VideoReceiver> VideoRecvVct;
-	
+	//创建线程来计算接收帧率
+	void countFPS();
 	void initRtmp();
 
 	//thread use to get(rtp)&send(rtmp)
@@ -62,7 +63,7 @@ private:
 	std::unique_ptr<AudioSender> audioSender = nullptr;
 	std::shared_ptr<NetManager> netManager = nullptr;
 
-
+	int countRcvA = 0, countRcvV = 0, countSndA = 0, countSndV = 0;
 
 	AVFrame* recvFrameVd = nullptr;
 	AVFrame* recvFrameAu = nullptr;

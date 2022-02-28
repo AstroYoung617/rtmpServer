@@ -8,7 +8,6 @@ RtmpClient::RtmpClient() {
 	netManager = std::make_shared<NetManager>();  
 }
 
-
 void RtmpClient::printData(int _type) {
 	if (_type == 1) {
 		I_LOG("print audio data");
@@ -47,8 +46,32 @@ void RtmpClient::createVideoCh(int _port) {
 
 	std::thread get_video(&RtmpClient::getVideoData, this);
 	std::thread send_video(&RtmpClient::sendVideoData, this);
+	std::thread count_vfps(&RtmpClient::countFPS, this);
 	threadMap["pollVd"] = std::move(get_video);
 	threadMap["pushVd"] = std::move(send_video);
+	threadMap["countFps"] = std::move(count_vfps);
+}
+
+void RtmpClient::countFPS(){
+	while (1) {
+		if (!startPush) {
+			std::unique_lock<std::mutex> lk(*mtx);
+			cv->wait(lk);
+		}
+		if (countRcvV < 25) {
+			for (int i = 0; i < 25 - countRcvV; i++) {
+				if (recvVdFrameDq.size() && recvVdFrameDq.front()->data[0]) {
+					recvVdFrameDq.push_front(recvVdFrameDq.front());
+					countSndV++;
+				}
+			}
+		}
+		E_LOG("video receive FPS = {}", countRcvV);
+		E_LOG("video send FPS = {}", countSndV);
+		countRcvV = 0;
+		countSndV = 0;
+		std::this_thread::sleep_for(std::chrono::seconds(1));
+	}
 }
 
 void RtmpClient::getAudioData() {
@@ -60,7 +83,6 @@ void RtmpClient::getAudioData() {
 	//	//TODO 之后将多个videoRecv的data进行拼接后传给videoSender
 	//}
 	// 
-	int count = 0;
 	while (1) {
 		if (!startPush) {
 			std::unique_lock<std::mutex> lk(*mtx);
@@ -71,8 +93,7 @@ void RtmpClient::getAudioData() {
 		recvFrameAu = audioReceiver->getData();
 		if (recvFrameAu && recvFrameAu->data[0]) {
 			recvAuFrameDq.push_back(recvFrameAu);
-			count++;
-
+			countRcvA++;
 			aucv->notify_one();
 		}
 		//TODO 之后将多个videoRecv的data进行拼接后传给videoSender
@@ -93,7 +114,8 @@ void RtmpClient::sendAudioData() {
 		if (recvAuFrameDq.size() && recvAuFrameDq.front()->data[0])
 			send2Rtmp(1);
 		//std::this_thread::sleep_for(std::chrono::milliseconds(25));
-		//lck.unlock();
+		//av_usleep(25000);
+		lck.unlock();
 	}
 }
 
@@ -110,6 +132,7 @@ void RtmpClient::getVideoData() {
 		recvFrameVd = videoRecv.getData();
 		if (recvFrameVd && recvFrameVd->data[0]) {
 			recvVdFrameDq.push_back(recvFrameVd);
+			countRcvV++;
 			vdcv->notify_one();
 		}
 		//TODO 之后将多个videoRecv的data进行拼接后传给videoSender
@@ -123,14 +146,16 @@ void RtmpClient::sendVideoData() {
 			std::unique_lock<std::mutex> lk(*mtx);
 			cv->wait(lk);
 		}
-		std::unique_lock<std::mutex> lck(*vdmtx);
-		vdcv->wait(lck);
+		//std::unique_lock<std::mutex> lck(*vdmtx);
+		//vdcv->wait(lck);
 		//vdcv->wait_for(lck, std::chrono::milliseconds(45));
-		if (recvVdFrameDq.size() && recvVdFrameDq.front()->data[0]) 
+		if (recvVdFrameDq.size() && recvVdFrameDq.front()->data[0]) {
+			countSndV++;
 			send2Rtmp(2);
-		//std::this_thread::sleep_for(std::chrono::milliseconds(95));
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(40));
 
-	 lck.unlock();
+	  //lck.unlock();
 
 	}
 }
@@ -158,7 +183,7 @@ void RtmpClient::setStart(bool _start) {
 		//videoSender / audioSender init encoder
 		videoSender = std::make_unique<VideoSender>(mtx, cv, netManager);
 		VideoDefinition vd = VideoDefinition(640, 480);
-		videoSender->initEncoder(vd, 10);
+		videoSender->initEncoder(vd, 25);
 
 		if (netManager->rtmpInit(1) == -1) {
 			return;
@@ -199,11 +224,11 @@ void RtmpClient::send2Rtmp(int _type) {
 		//audioSender->send(recvFrameAu->data[0], len);
 	}
 	else if (_type == 2) {
-		if (videoSender->lastPts / 2 > audioSender->lastPts) {
-			//av_usleep(1000 * (videoSender->lastPts * 2 - audioSender->lastPts));
-			recvVdFrameDq.pop_front();
-			return;
-		}
+		//if (videoSender->lastPts / 2 > audioSender->lastPts) {
+		//	//av_usleep(1000 * (videoSender->lastPts * 2 - audioSender->lastPts));
+		//	recvVdFrameDq.pop_front();
+		//	return;
+		//}
 		videoSender->sendFrame(recvVdFrameDq.front());
 		recvVdFrameDq.pop_front();
 		//videoSender->sendFrame(combineYUV(recvFrameVd));
@@ -270,4 +295,6 @@ RtmpClient::~RtmpClient() {
 		threadMap["pushVd"].join();
 	else if (threadMap["pollVd"].joinable())
 		threadMap["pollVd"].join();
+	else if (threadMap["countFps"].joinable())
+		threadMap["countFps"].join();
 }
