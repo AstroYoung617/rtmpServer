@@ -183,7 +183,7 @@ void RtmpClient::setStart(bool _start) {
 		//videoSender / audioSender init encoder
 		videoSender = std::make_unique<VideoSender>(mtx, cv, netManager);
 		VideoDefinition vd = VideoDefinition(640, 480);
-		videoSender->initEncoder(vd, 25);
+		videoSender->initEncoder(vd, 20);
 
 		if (netManager->rtmpInit(1) == -1) {
 			return;
